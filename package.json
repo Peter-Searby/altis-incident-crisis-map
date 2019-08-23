@@ -1,0 +1,17 @@
+{
+  "name": "mapping",
+  "version": "1.0.0",
+  "description": "",
+  "main": "script.js",
+  "dependencies": {
+    "ol": "^5.3.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+	    "test": "echo \"Error: no test specified\" && exit 1",
+	    "start": "parcel index.html -p 8000",
+	    "build": "parcel build --public-url / index.html"
+  },
+  "author": "",
+  "license": "ISC"
+}
