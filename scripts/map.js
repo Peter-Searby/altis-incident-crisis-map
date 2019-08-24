@@ -7,6 +7,8 @@ import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
 import Text from 'ol/style/Text';
 
 
+
+
 var map = new Map({
   layers: [
 	new TileLayer({
@@ -17,7 +19,7 @@ var map = new Map({
   view: new View({
 	center: [ 2807000, 4852600 ],
 	zoom: 11,
-	minZoom: 9,
+	minZoom: 2,
 	maxZoom: 18
   })
 });
@@ -47,7 +49,7 @@ var width = window.innerWidth
 var height = window.innerHeight
 || document.documentElement.clientHeight
 || document.body.clientHeight;
-map.setSize([width, height*0.99])
+map.setSize([width, height*0.98])
 map.on('postcompose', function(event) {
   var vectorContext = event.vectorContext;
   // var frameState = event.frameState;
