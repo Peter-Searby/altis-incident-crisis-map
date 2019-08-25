@@ -38,9 +38,13 @@ var pointStyle = new Style({
 });
 
 
-var point = new Point([2807000, 4852600]);
+var oldPoint = new Point([2807000, 4852600]);
+var newPoint = new Point([2807000, 4852600]);
 
 
+var url = "test.json";
+var vc;
+var started = false;
 
 var width = window.innerWidth
 || document.documentElement.clientWidth
@@ -51,29 +55,35 @@ var height = window.innerHeight
 || document.body.clientHeight;
 map.setSize([width, height*0.98])
 map.on('postcompose', function(event) {
-  var vectorContext = event.vectorContext;
-  // var frameState = event.frameState;
-  // var theta = 2 * Math.PI * frameState.time / omegaTheta;
-  // var coordinates = [];
-  // var i;
-  // for (i = 0; i < n; ++i) {
-	// var t = theta + 2 * Math.PI * i / n;
-	// var x = (R + r) * Math.cos(t) + p * Math.cos((R + r) * t / r);
-	// var y = (R + r) * Math.sin(t) + p * Math.sin((R + r) * t / r);
-	// coordinates.push([x, y]);
-  // }
-  // vectorContext.setStyle(imageStyle);
-  // vectorContext.drawGeometry(new MultiPoint(coordinates));
-
-  vectorContext.setStyle(pointStyle)
-  vectorContext.drawGeometry(point);
-  map.render();
+	vc = event.vectorContext;
+	vc.setStyle(pointStyle);
+	vc.drawGeometry(newPoint);
+	map.render();
 });
 
 
 
 map.on('pointermove', function (event) {
-    var pixel = map.getEventPixel(evt.originalEvent);
+    // var pixel = map.getEventPixel(evt.originalEvent);
 });
 
+function request() {
+	if (vc) {
+		fetch(url).then(function(response) {
+		  	response.text().then(function(text) {
+		  	  	var json = JSON.parse(text);
+
+
+		  	  	newPoint = new Point(json["test-point"]);
+		  });
+		});
+	}
+}
+
+
 map.render();
+var timer = setInterval(request, 1000);
+
+map.on('dblclick', function (event) {
+	clearInterval(timer);
+});
