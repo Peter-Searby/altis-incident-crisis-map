@@ -2,15 +2,18 @@
   "name": "mapping",
   "version": "1.0.0",
   "description": "",
-  "main": "index.html",
+  "main": "index.js",
   "dependencies": {
+    "express": "^4.17.1",
     "ol": "^5.3.3"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "cssnano": "^4.1.10"
+  },
   "scripts": {
-	    "test": "echo \"Error: no test specified\" && exit 1",
-	    "start": "parcel index.html -p 8000",
-	    "build": "parcel build --public-url / index.html"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npm run-script build; node server.js",
+    "build": "parcel build --public-url / index.html"
   },
   "author": "",
   "license": "ISC"

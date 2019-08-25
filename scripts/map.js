@@ -69,14 +69,12 @@ map.on('pointermove', function (event) {
 
 function request() {
 	if (vc) {
-		fetch(url).then(function(response) {
-		  	response.text().then(function(text) {
-		  	  	var json = JSON.parse(text);
-
-
-		  	  	newPoint = new Point(json["test-point"]);
-		  });
-		});
+		// fetch(url).then(function(response) {
+		//   	response.text().then(function(text) {
+		//   	  	var json = JSON.parse(text);
+		//   	  	newPoint = new Point(json["test-point"]);
+		//   });
+		// });
 	}
 }
 
@@ -87,3 +85,16 @@ var timer = setInterval(request, 1000);
 map.on('dblclick', function (event) {
 	clearInterval(timer);
 });
+
+
+map.on('click', function (event) {
+	var xmlhttp = new XMLHttpRequest();
+
+    xmlhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            console.log(this.responseText)
+       }
+    };
+	xmlhttp.open("POST", "server.js", true)
+	xmlhttp.send("It me");
+})
