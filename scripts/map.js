@@ -69,12 +69,12 @@ map.on('pointermove', function (event) {
 
 function request() {
 	if (vc) {
-		// fetch(url).then(function(response) {
-		//   	response.text().then(function(text) {
-		//   	  	var json = JSON.parse(text);
-		//   	  	newPoint = new Point(json["test-point"]);
-		//   });
-		// });
+		fetch(url).then(function(response) {
+		  	response.text().then(function(text) {
+		  	  	var json = JSON.parse(text);
+		  	  	newPoint = new Point(json["test-point"]);
+		  });
+		});
 	}
 }
 
@@ -90,12 +90,12 @@ map.on('dblclick', function (event) {
 map.on('click', function (event) {
 	var xmlhttp = new XMLHttpRequest();
 
-    xmlhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-            console.log(this.responseText)
-       }
-    };
+    // xmlhttp.onreadystatechange = function() {
+    //     if (this.readyState == 4 && this.status == 200) {
+    //         console.log(this.responseText)
+    //    }
+    // };
 	xmlhttp.open("POST", "server.js", true)
 	xmlhttp.setRequestHeader("Content-Type", "application/json")
-	xmlhttp.send(JSON.stringify({text: "It me"}));
+	xmlhttp.send(JSON.stringify({point: event.coordinate}));
 })
