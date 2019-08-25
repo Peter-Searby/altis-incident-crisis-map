@@ -1,18 +1,13 @@
 const express = require('express')
+const bodyParser = require('body-parser')
 const app = express()
 const port = 8000
 
 
+app.use(express.static('dist'))
+app.use(bodyParser.json())
 app.post('/server.js', function (req, res, next) {
-	res.send('Test successful: '+ req)
+	res.send('Test successful: '+ req.body.text)
 	next()
 })
-// app.use(function (req, res, next) {
-// 	console.log("------------------------------------------------------------")
-// 	console.log(req)
-// 	console.log("------------------")
-// 	console.log(res)
-// 	next()
-// })
-app.use(express.static('dist'))
 app.listen(port)

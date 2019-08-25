@@ -96,5 +96,6 @@ map.on('click', function (event) {
        }
     };
 	xmlhttp.open("POST", "server.js", true)
-	xmlhttp.send("It me");
+	xmlhttp.setRequestHeader("Content-Type", "application/json")
+	xmlhttp.send(JSON.stringify({text: "It me"}));
 })
