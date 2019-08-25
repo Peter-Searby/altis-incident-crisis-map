@@ -5,6 +5,9 @@ const app = express()
 const port = 8000
 
 var defaultMap = fs.readFileSync('default-map.json')
+if (!fs.existsSync("data")) {
+	fs.mkdirSync("data")
+}
 fs.writeFileSync('data/map.json', defaultMap)
 
 app.use(express.static('dist'))
