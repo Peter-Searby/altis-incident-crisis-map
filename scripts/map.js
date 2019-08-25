@@ -38,8 +38,8 @@ var pointStyle = new Style({
 });
 
 
-var oldPoint = new Point([2807000, 4852600]);
-var newPoint = new Point([2807000, 4852600]);
+var units = []
+
 
 
 var url = "test.json";
@@ -57,7 +57,10 @@ map.setSize([width, height*0.98])
 map.on('postcompose', function(event) {
 	vc = event.vectorContext;
 	vc.setStyle(pointStyle);
-	vc.drawGeometry(newPoint);
+	var unit
+	for (unit of units) {
+		vc.drawGeometry(new Point(unit.loc));
+	}
 	map.render();
 });
 
@@ -67,35 +70,40 @@ map.on('pointermove', function (event) {
     // var pixel = map.getEventPixel(evt.originalEvent);
 });
 
-function request() {
-	if (vc) {
-		fetch(url).then(function(response) {
-		  	response.text().then(function(text) {
-		  	  	var json = JSON.parse(text);
-		  	  	newPoint = new Point(json["test-point"]);
-		  });
-		});
-	}
-}
-
 
 map.render();
-var timer = setInterval(request, 1000);
+sync('[]');
 
 map.on('dblclick', function (event) {
 	clearInterval(timer);
 });
 
 
+// TODO run 2 times per second
 map.on('click', function (event) {
-	var xmlhttp = new XMLHttpRequest();
+	var unit = addUnit(event.coordinate)
+	sync('[{"type": "add", "unit": '+JSON.stringify(unit)+'}]')
+})
 
-    // xmlhttp.onreadystatechange = function() {
-    //     if (this.readyState == 4 && this.status == 200) {
-    //         console.log(this.responseText)
-    //    }
-    // };
+function addUnit(pos) {
+	var unitId = 0
+	if (units.length>0) {
+		unitId = units[units.length-1].id+1
+	}
+	var unit = {id: unitId, loc: pos}
+	units.push(unit)
+	return unit
+}
+
+function sync(changes) {
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+			var mapJSON = JSON.parse(this.responseText)
+			units = mapJSON.units
+		}
+	}
 	xmlhttp.open("POST", "server.js", true)
 	xmlhttp.setRequestHeader("Content-Type", "application/json")
-	xmlhttp.send(JSON.stringify({point: event.coordinate}));
-})
+	xmlhttp.send('{"changes": '+changes+'}');
+}
