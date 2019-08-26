@@ -99,17 +99,26 @@ function addUnit(pos) {
 function sync(changes) {
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
+	    if (this.readyState == 4 && this.status == 200) {
 			var mapJSON = JSON.parse(this.responseText)
-      units = []
-      for (var unit of mapJSON.units) {
-        var newUnit = unit
-        newUnit.feature = new Feature(new Point(unit.loc))
-        units.push(newUnit)
-      }
+			units = []
+			for (var unit of mapJSON.units) {
+				var newUnit = unit
+				newUnit.feature = new Feature(new Point(unit.loc))
+				units.push(newUnit)
+			}
 		}
 	}
 	xmlhttp.open("POST", "server.js", true)
 	xmlhttp.setRequestHeader("Content-Type", "application/json")
 	xmlhttp.send('{"changes": '+changes+'}');
 }
+
+function rightClick(e) {
+	e.preventDefault()
+	var unit = addUnit(map.getCoordinateFromPixel([e.clientX, e.clientY]))
+	var rawUnit = {id: unit.id, loc: unit.loc}
+	sync('[{"type": "add", "unit": '+JSON.stringify(rawUnit)+'}]')
+}
+
+document.getElementById('map').oncontextmenu = rightClick
