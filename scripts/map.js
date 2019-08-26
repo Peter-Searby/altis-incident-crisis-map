@@ -5,6 +5,7 @@ import TileLayer from 'ol/layer/Tile.js';
 import OSM from 'ol/source/OSM.js';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
 import Text from 'ol/style/Text';
+import Feature from 'ol/Feature'
 
 
 
@@ -56,12 +57,12 @@ var height = window.innerHeight
 map.setSize([width, height*0.98])
 map.on('postcompose', function(event) {
 	vc = event.vectorContext;
-	vc.setStyle(pointStyle);
+  vc.setStyle(pointStyle)
 	var unit
 	for (unit of units) {
-		vc.drawGeometry(new Point(unit.loc));
+		vc.drawFeature(unit.feature, pointStyle)
 	}
-	map.render();
+	map.render()
 });
 
 
@@ -81,8 +82,8 @@ sync('[]');
 
 // TODO run 2 times per second
 map.on('click', function (event) {
-	var unit = addUnit(event.coordinate)
-	sync('[{"type": "add", "unit": '+JSON.stringify(unit)+'}]')
+	// var unit = addUnit(event.coordinate)
+	// sync('[{"type": "add", "unit": '+JSON.stringify(unit)+'}]')
 })
 
 function addUnit(pos) {
@@ -90,7 +91,7 @@ function addUnit(pos) {
 	if (units.length>0) {
 		unitId = units[units.length-1].id+1
 	}
-	var unit = {id: unitId, loc: pos}
+	var unit = {id: unitId, loc: pos, feature: new Feature(new Point(pos))}
 	units.push(unit)
 	return unit
 }
@@ -98,9 +99,14 @@ function addUnit(pos) {
 function sync(changes) {
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
+    if (this.readyState == 4 && this.status == 200) {
 			var mapJSON = JSON.parse(this.responseText)
-			units = mapJSON.units
+      units = []
+      for (var unit of mapJSON.units) {
+        var newUnit = unit
+        newUnit.feature = new Feature(new Point(unit.loc))
+        units.push(newUnit)
+      }
 		}
 	}
 	xmlhttp.open("POST", "server.js", true)
