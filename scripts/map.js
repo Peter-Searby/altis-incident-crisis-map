@@ -5,24 +5,52 @@ import TileLayer from 'ol/layer/Tile.js';
 import OSM from 'ol/source/OSM.js';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
 import Text from 'ol/style/Text';
-import Feature from 'ol/Feature'
+import Feature from 'ol/Feature';
+import VectorSource from 'ol/source/Vector';
+import VectorLayer from 'ol/layer/Vector';
 
+
+class Unit {
+	constructor(loc, id) {
+		if (id == undefined) {
+			this.feature = loc
+		} else {
+			this.feature = new Feature(new Point(loc))
+			this.feature.setId(id)
+			vectorSource.addFeature(this.feature)
+		}
+	}
+	toRaw() {
+		return {id: this.feature.getId(), loc: this.feature.getGeometry().getCoordinates()}
+	}
+	get id() {
+		return this.feature.getId()
+	}
+	get loc() {
+		return this.feature.getGeometry().getCoordinates()
+	}
+}
+
+var vectorSource = new VectorSource()
 
 
 
 var map = new Map({
-  layers: [
-	new TileLayer({
-	  source: new OSM()
+	layers: [
+		new TileLayer({
+			source: new OSM()
+		}),
+		new VectorLayer({
+			source: vectorSource
+		})
+	],
+	target: 'map',
+	view: new View({
+		center: [ 2807000, 4852600 ],
+		zoom: 11,
+		minZoom: 2,
+		maxZoom: 18
 	})
-  ],
-  target: 'map',
-  view: new View({
-	center: [ 2807000, 4852600 ],
-	zoom: 11,
-	minZoom: 2,
-	maxZoom: 18
-  })
 });
 
 var pointStyle = new Style({
@@ -44,7 +72,6 @@ var units = []
 
 
 var url = "test.json";
-var vc;
 var started = false;
 
 var width = window.innerWidth
@@ -54,10 +81,14 @@ var width = window.innerWidth
 var height = window.innerHeight
 || document.documentElement.clientHeight
 || document.body.clientHeight;
+
+document.getElementById('map').oncontextmenu = rightClick
+
 map.setSize([width, height*0.98])
+
+
 map.on('postcompose', function(event) {
-	vc = event.vectorContext;
-  vc.setStyle(pointStyle)
+	var vc = event.vectorContext;
 	var unit
 	for (unit of units) {
 		vc.drawFeature(unit.feature, pointStyle)
@@ -80,18 +111,24 @@ sync('[]');
 // });
 
 
-// TODO run 2 times per second
 map.on('click', function (event) {
-	// var unit = addUnit(event.coordinate)
-	// sync('[{"type": "add", "unit": '+JSON.stringify(unit)+'}]')
+	var unitsUnder = map.getFeaturesAtPixel(event.pixel, {hitTolerance: 20})
+	if (unitsUnder) {
+		displayTooltip(unitsUnder[0])
+	} else {
+		console.log("no unit: "+unitsUnder)
+	}
 })
 
-function addUnit(pos) {
-	var unitId = 0
-	if (units.length>0) {
-		unitId = units[units.length-1].id+1
+function addUnit(loc, id) {
+	if (id == undefined) {
+		if (units) {
+			id = units[units.length-1].id+1
+		} else {
+			id = 0
+		}
 	}
-	var unit = {id: unitId, loc: pos, feature: new Feature(new Point(pos))}
+	var unit = new Unit(loc, id)
 	units.push(unit)
 	return unit
 }
@@ -102,10 +139,8 @@ function sync(changes) {
 	    if (this.readyState == 4 && this.status == 200) {
 			var mapJSON = JSON.parse(this.responseText)
 			units = []
-			for (var unit of mapJSON.units) {
-				var newUnit = unit
-				newUnit.feature = new Feature(new Point(unit.loc))
-				units.push(newUnit)
+			for (var rawUnit of mapJSON.units) {
+				addUnit(rawUnit.loc, rawUnit.id)
 			}
 		}
 	}
@@ -117,8 +152,20 @@ function sync(changes) {
 function rightClick(e) {
 	e.preventDefault()
 	var unit = addUnit(map.getCoordinateFromPixel([e.clientX, e.clientY]))
-	var rawUnit = {id: unit.id, loc: unit.loc}
+	var rawUnit = unit.toRaw()
 	sync('[{"type": "add", "unit": '+JSON.stringify(rawUnit)+'}]')
 }
 
-document.getElementById('map').oncontextmenu = rightClick
+function getUnit(feature) {
+	for (var unit of units) {
+		if (unit.feature == feature) {
+			return unit
+		}
+	}
+}
+
+
+function displayTooltip(unitFeature) {
+	var unit = getUnit(unitFeature)
+	console.log("found unit!")
+}
