@@ -74,9 +74,9 @@ map.on('pointermove', function (event) {
 map.render();
 sync('[]');
 
-map.on('dblclick', function (event) {
-	clearInterval(timer);
-});
+// map.on('dblclick', function (event) {
+// 	clearInterval(timer);
+// });
 
 
 // TODO run 2 times per second
