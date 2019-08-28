@@ -8,6 +8,7 @@ import Text from 'ol/style/Text';
 import Feature from 'ol/Feature';
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
+import Control from 'ol/control/Control';
 
 
 var pointStyle = new Style({
@@ -45,6 +46,7 @@ var vectorSource = new VectorSource()
 
 
 var map = new Map({
+	controls: [new Control({element: document.getElementById("tooltip")})],
 	layers: [
 		new TileLayer({
 			source: new OSM()
@@ -61,7 +63,6 @@ var map = new Map({
 		maxZoom: 18
 	})
 });
-
 
 
 var units = []
