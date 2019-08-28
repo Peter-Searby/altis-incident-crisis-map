@@ -10,15 +10,24 @@ import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
 
 
+var pointStyle = new Style({
+	image: new CircleStyle({
+		radius: 20,
+		fill: new Fill({color: 'blue'}),
+		stroke: new Stroke({color: 'black', width: 1})
+	}),
+	text: new Text({
+		font: '13px sans-serif',
+		text: "20k",
+		fill: new Fill({color: 'white'})
+	})
+});
+
 class Unit {
 	constructor(loc, id) {
-		if (id == undefined) {
-			this.feature = loc
-		} else {
-			this.feature = new Feature(new Point(loc))
-			this.feature.setId(id)
-			vectorSource.addFeature(this.feature)
-		}
+		this.feature = new Feature(new Point(loc))
+		this.feature.setId(id)
+		this.feature.setStyle(pointStyle)
 	}
 	toRaw() {
 		return {id: this.feature.getId(), loc: this.feature.getGeometry().getCoordinates()}
@@ -53,18 +62,6 @@ var map = new Map({
 	})
 });
 
-var pointStyle = new Style({
-  image: new CircleStyle({
-	radius: 20,
-	fill: new Fill({color: 'blue'}),
-	stroke: new Stroke({color: 'black', width: 1})
-  }),
-  text: new Text({
-	  font: '13px sans-serif',
-	  text: "20k",
-	  fill: new Fill({color: 'white'})
-  })
-});
 
 
 var units = []
@@ -88,37 +85,19 @@ map.setSize([width, height*0.98])
 
 
 map.on('postcompose', function(event) {
-	var vc = event.vectorContext;
-	var unit
-	for (unit of units) {
-		vc.drawFeature(unit.feature, pointStyle)
-	}
+	// var vc = event.vectorContext;
+	// var unit
+	// for (unit of units) {
+	// 	vc.drawFeature(unit.feature, pointStyle)
+	// }
 	map.render()
-});
-
-
-
-map.on('pointermove', function (event) {
-    // var pixel = map.getEventPixel(evt.originalEvent);
 });
 
 
 map.render();
 sync('[]');
 
-// map.on('dblclick', function (event) {
-// 	clearInterval(timer);
-// });
 
-
-map.on('click', function (event) {
-	var unitsUnder = map.getFeaturesAtPixel(event.pixel, {hitTolerance: 20})
-	if (unitsUnder) {
-		displayTooltip(unitsUnder[0])
-	} else {
-		console.log("no unit: "+unitsUnder)
-	}
-})
 
 function addUnit(loc, id) {
 	if (id == undefined) {
@@ -129,6 +108,7 @@ function addUnit(loc, id) {
 		}
 	}
 	var unit = new Unit(loc, id)
+	vectorSource.addFeature(unit.feature)
 	units.push(unit)
 	return unit
 }
@@ -139,6 +119,7 @@ function sync(changes) {
 	    if (this.readyState == 4 && this.status == 200) {
 			var mapJSON = JSON.parse(this.responseText)
 			units = []
+			vectorSource.clear()
 			for (var rawUnit of mapJSON.units) {
 				addUnit(rawUnit.loc, rawUnit.id)
 			}
@@ -149,6 +130,47 @@ function sync(changes) {
 	xmlhttp.send('{"changes": '+changes+'}');
 }
 
+function getUnitFromFeature(feature) {
+	for (var unit of units) {
+		if (unit.feature == feature) {
+			return unit
+		}
+	}
+	throw "Can't find unit with requested feature"
+}
+
+function getUnitAt(pixel) {
+	var foundUnits = []
+	for (var unit of units) {
+		var unitPixel = map.getPixelFromCoordinate(unit.loc)
+		var distance = Math.hypot(unitPixel[0]-pixel[0]-15*unitPixel[0]/width, unitPixel[1] - pixel[1]-4*unitPixel[1]/height)
+		if (distance<22) {
+			foundUnits.push(unit, distance)
+		}
+		console.log(distance);
+	}
+	if (foundUnits.length>0) {
+		var sortedUnits = foundUnits.sort(function(a,b){return a[1]-b[1]})
+		return sortedUnits[0]
+	}
+}
+
+
+function displayTooltip(unit) {
+	console.log(`found unit!: ${unit.loc}`)
+}
+
+map.on('click', function (event) {
+	var unitUnder = getUnitAt(event.pixel)
+	console.log(`Click at ${event.pixel}`)
+	if (unitUnder) {
+		displayTooltip(unitUnder)
+	} else {
+		console.log("no unit")
+	}
+})
+
+
 function rightClick(e) {
 	e.preventDefault()
 	var unit = addUnit(map.getCoordinateFromPixel([e.clientX, e.clientY]))
@@ -156,16 +178,11 @@ function rightClick(e) {
 	sync('[{"type": "add", "unit": '+JSON.stringify(rawUnit)+'}]')
 }
 
-function getUnit(feature) {
-	for (var unit of units) {
-		if (unit.feature == feature) {
-			return unit
-		}
-	}
-}
 
+map.on('pointermove', function (event) {
+	// var pixel = map.getEventPixel(evt.originalEvent);
+});
 
-function displayTooltip(unitFeature) {
-	var unit = getUnit(unitFeature)
-	console.log("found unit!")
-}
+// map.on('dblclick', function (event) {
+// 	clearInterval(timer);
+// });
