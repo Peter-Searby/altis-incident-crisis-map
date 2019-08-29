@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Dynamic Data</title>
+		<title>Altis</title>
 		<link rel="stylesheet" href="https://openlayers.org/en/v5.3.0/css/ol.css" type="text/css">
 		<link rel="stylesheet" href="stylesheets/style.css" type="text/css">
 	  	<script src="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/build/ol.js"></script>
@@ -10,7 +10,15 @@
 		<script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
 	</head>
 	<body>
-		<div id="tooltip" class="ol-overlaycontainer-stopevent" style="display:none"></div>
+		<div id="tooltip"><table id="tooltipTable">
+			<tr>
+				<th>Unit Properties</th>
+			</tr>
+			<tr>
+				<td>test</td>
+				<td>1</td>
+			</tr>
+		</table></div>
 		<div id="map" class="map"></div>
 		<script src="scripts/map.js"></script>
 		<div id="minimap" class="ol-overlaycontainer-stopevent"><canvas id="minimapCanvas" style="border:1px solid #000000"></canvas></div>

@@ -8,7 +8,7 @@ import Text from 'ol/style/Text';
 import Feature from 'ol/Feature';
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
-import Control from 'ol/control/Control';
+import {defaults as defaultControls, Control} from 'ol/control.js';
 
 
 var pointStyle = new Style({
@@ -44,9 +44,66 @@ class Unit {
 var vectorSource = new VectorSource()
 
 
+var tooltipElement = document.getElementById('tooltip');
+
+var TooltipControl = (function (Control) {
+	function TooltipControl(opt_options) {
+		var options = opt_options || {};
+
+		// var button = document.createElement('button');
+		// button.innerHTML = 'N';
+
+		tooltipElement.className = 'tooltip ol-unselectable ol-control';
+		// <table id="tooltipTable">
+		// 	<tr>
+		// 		<th>Unit Properties</th>
+		// 	</tr>
+		// 	<tr>
+		// 		<td>test</td>
+		// 		<td>1</td>
+		// </table>
+		// var table = document.createElement('table')
+		// table.id = 'tooltip'
+		// table.innerHTML = `
+		// <tr>
+		// 	<th>Unit Properties</th>
+		// </tr>
+		// <tr>
+		// 	<td>test</td>
+		// 	<td>1</td>
+		// </tr>
+		// `
+
+
+		// tooltipElement.appendChild(table);
+
+		Control.call(this, {
+			element: tooltipElement,
+			target: options.target
+		});
+
+		tooltipElement.addEventListener('click', this.receiveClick.bind(this), false);
+	}
+
+	if ( Control ) TooltipControl.__proto__ = Control;
+	TooltipControl.prototype = Object.create( Control && Control.prototype );
+	TooltipControl.prototype.constructor = TooltipControl;
+
+	TooltipControl.prototype.receiveClick = function receiveClick () {
+		this.getMap().getView().setRotation(90);
+		//TODO
+	};
+
+	return TooltipControl;
+  }(Control));
+
+
+
 
 var map = new Map({
-	controls: [new Control({element: document.getElementById("tooltip")})],
+	controls: defaultControls().extend([
+		new TooltipControl()
+    ]),
 	layers: [
 		new TileLayer({
 			source: new OSM()
@@ -157,15 +214,20 @@ function getUnitAt(pixel) {
 }
 
 
-function displayTooltip(unit) {
+function displayTooltip(unit, pixel) {
 	console.log(`found unit!: ${unit.loc}`)
+	tooltip.style = `
+	background-color: white;
+	top: ${pixel[1]};
+	left: ${pixel[0]};
+	`
 }
 
 map.on('click', function (event) {
 	var unitUnder = getUnitAt(event.pixel)
 	console.log(`Click at ${event.pixel}`)
 	if (unitUnder) {
-		displayTooltip(unitUnder)
+		displayTooltip(unitUnder, event.pixel)
 	} else {
 		console.log("no unit")
 	}
