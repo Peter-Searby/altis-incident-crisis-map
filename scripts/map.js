@@ -205,7 +205,6 @@ function getUnitAt(pixel) {
 		if (distance<22) {
 			foundUnits.push(unit, distance)
 		}
-		console.log(distance);
 	}
 	if (foundUnits.length>0) {
 		var sortedUnits = foundUnits.sort(function(a,b){return a[1]-b[1]})
@@ -215,22 +214,30 @@ function getUnitAt(pixel) {
 
 
 function displayTooltip(unit, pixel) {
-	console.log(`found unit!: ${unit.loc}`)
 	tooltip.style = `
+	position: absolute;
 	background-color: white;
-	top: ${pixel[1]};
-	left: ${pixel[0]};
+	top: ${pixel[1]}px;
+	left: ${pixel[0]}px;
+	display:block;
 	`
+}
+
+function hideTooltip() {
+	tooltip.style = 'display:none;'
 }
 
 map.on('click', function (event) {
 	var unitUnder = getUnitAt(event.pixel)
-	console.log(`Click at ${event.pixel}`)
 	if (unitUnder) {
 		displayTooltip(unitUnder, event.pixel)
 	} else {
-		console.log("no unit")
+		hideTooltip();
 	}
+})
+
+map.on('movestart', function (event) {
+	hideTooltip();
 })
 
 

@@ -8,6 +8,5 @@
 
 #tooltip {
 	position: absolute;
-	top: 65px;
-	left: .5em;
+	display: none;
 }
