@@ -9,6 +9,7 @@ import Feature from 'ol/Feature';
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
 import {defaults as defaultControls, Control} from 'ol/control.js';
+import {defaults as defaultInteractions} from 'ol/interaction.js';
 
 
 var pointStyle = new Style({
@@ -54,25 +55,6 @@ var TooltipControl = (function (Control) {
 		// button.innerHTML = 'N';
 
 		tooltipElement.className = 'tooltip ol-unselectable ol-control';
-		// <table id="tooltipTable">
-		// 	<tr>
-		// 		<th>Unit Properties</th>
-		// 	</tr>
-		// 	<tr>
-		// 		<td>test</td>
-		// 		<td>1</td>
-		// </table>
-		// var table = document.createElement('table')
-		// table.id = 'tooltip'
-		// table.innerHTML = `
-		// <tr>
-		// 	<th>Unit Properties</th>
-		// </tr>
-		// <tr>
-		// 	<td>test</td>
-		// 	<td>1</td>
-		// </tr>
-		// `
 
 
 		// tooltipElement.appendChild(table);
@@ -118,7 +100,8 @@ var map = new Map({
 		zoom: 11,
 		minZoom: 2,
 		maxZoom: 18
-	})
+	}),
+	keyboardEventTarget: document
 });
 
 
