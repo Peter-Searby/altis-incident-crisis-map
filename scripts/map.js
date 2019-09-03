@@ -40,6 +40,9 @@ class Unit {
 	get id() {
 		return this.feature.getId()
 	}
+	get visualLoc() {
+		return this.feature.getGeometry().getCoordinates()
+	}
 	updateZoom(gridWidth){
 		this.feature.getGeometry().setCoordinates([
 			Math.round(this.loc[0]/gridWidth)*gridWidth,
@@ -210,7 +213,7 @@ function getUnitFromFeature(feature) {
 function getUnitAt(pixel) {
 	var foundUnits = []
 	for (var unit of units) {
-		var unitPixel = map.getPixelFromCoordinate(unit.loc)
+		var unitPixel = map.getPixelFromCoordinate(unit.visualLoc)
 		var distance = Math.hypot(unitPixel[0]-pixel[0]-15*unitPixel[0]/width, unitPixel[1] - pixel[1]-4*unitPixel[1]/height)
 		if (distance<22) {
 			foundUnits.push(unit, distance)
