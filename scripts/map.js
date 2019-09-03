@@ -109,15 +109,15 @@ var map = new Map({
 });
 
 
-var coordinateDistanceOf1km = 1000*1.0/map.getView().getProjection().getMetersPerUnit()
-
-var degreesPerGridSquare = toLonLat([coordinateDistanceOf1km, 0])
 
 var graticule = new Graticule({
-	style: new Stroke({
-		color: [128, 127, 127, 0.8],
-		width: 2,
+	style: new Style({
+		stroke: new Stroke({
+			color: [128,127,127],
+			width: 0.3,
+		})
 	}),
+	borderWidth: 1,
 	step: 1000,
 	projection: 'EPSG:3857',
 });
