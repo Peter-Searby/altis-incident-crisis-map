@@ -2,7 +2,16 @@
 	"units": [
 		{
 			"id": 0,
-			"loc": [2807000, 4852600]
+			"loc": [2807000, 4852600],
+			"Unit Type": "Carrier",
+			"properties": {
+				"Speed": 50,
+				"Range": 5,
+				"Ammunition": 100,
+				"Size": 100,
+				"Vision": 10,
+				"Concealment": 1
+			}
 		}
 	]
 }

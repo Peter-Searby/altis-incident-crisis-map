@@ -28,14 +28,21 @@ var pointStyle = new Style({
 });
 
 class Unit {
-	constructor(loc, id) {
+	constructor(loc, id, type, properties) {
 		this.feature = new Feature(new Point(loc))
 		this.feature.setId(id)
 		this.feature.setStyle(pointStyle)
 		this.loc = loc
+		this.type = type
+		this.properties = properties
 	}
 	toRaw() {
-		return {id: this.feature.getId(), loc: this.loc}
+		return {
+			id: this.feature.getId(),
+			loc: this.loc,
+			type: this.type,
+			properties: this.properties
+		}
 	}
 	get id() {
 		return this.feature.getId()
@@ -151,11 +158,6 @@ map.setSize([width, height*0.98])
 
 
 map.on('postcompose', function(event) {
-	// var vc = event.vectorContext;
-	// var unit
-	// for (unit of units) {
-	// 	vc.drawFeature(unit.feature, pointStyle)
-	// }
 	map.render()
 });
 
@@ -165,9 +167,18 @@ sync('[]');
 
 updateZoom();
 
+var defaultUnitProperties = {
+	"Speed": 50,
+	"Range": 5,
+	"Ammunition": 100,
+	"Size": 100,
+	"Vision": 10,
+	"Concealment": 1
+}
 
+var defaultUnitType = "Carrier"
 
-function addUnit(loc, id) {
+function addUnit(loc, id, type, properties) {
 	if (id == undefined) {
 		if (units) {
 			id = units[units.length-1].id+1
@@ -177,7 +188,15 @@ function addUnit(loc, id) {
 	}
 	loc[0] = Math.round(loc[0]/1000)*1000
 	loc[1] = Math.round(loc[1]/1000)*1000
-	var unit = new Unit(loc, id)
+
+	if (type == undefined) {
+		type = defaultUnitType
+	}
+	if (properties == undefined) {
+		properties = defaultUnitProperties
+	}
+
+	var unit = new Unit(loc, id, type, properties)
 	vectorSource.addFeature(unit.feature)
 	units.push(unit)
 	updateZoom();
@@ -192,7 +211,7 @@ function sync(changes) {
 			units = []
 			vectorSource.clear()
 			for (var rawUnit of mapJSON.units) {
-				addUnit(rawUnit.loc, rawUnit.id)
+				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.properties)
 			}
 		}
 	}
@@ -234,6 +253,7 @@ function displayTooltip(unit, pixel) {
 	left: ${pixel[0]}px;
 	display:block;
 	`
+	document.getElementById("tooltipHeader").innerHTML = unit.type
 }
 
 function hideTooltip() {
