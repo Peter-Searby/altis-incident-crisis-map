@@ -32,15 +32,19 @@ class Unit {
 		this.feature = new Feature(new Point(loc))
 		this.feature.setId(id)
 		this.feature.setStyle(pointStyle)
+		this.loc = loc
 	}
 	toRaw() {
-		return {id: this.feature.getId(), loc: this.feature.getGeometry().getCoordinates()}
+		return {id: this.feature.getId(), loc: loc}
 	}
 	get id() {
 		return this.feature.getId()
 	}
-	get loc() {
-		return this.feature.getGeometry().getCoordinates()
+	updateZoom(gridWidth){
+		this.feature.getGeometry().setCoordinates([
+			Math.round(this.loc[0]/gridWidth)*gridWidth,
+			Math.round(this.loc[1]/gridWidth)*gridWidth]
+		)
 	}
 }
 
@@ -113,7 +117,7 @@ var map = new Map({
 var graticule = new Graticule({
 	style: new Style({
 		stroke: new Stroke({
-			color: [128,127,127],
+			color: [130,125,125],
 			width: 0.3,
 		})
 	}),
@@ -155,6 +159,8 @@ map.on('postcompose', function(event) {
 
 map.render();
 sync('[]');
+
+updateZoom();
 
 
 
@@ -217,7 +223,7 @@ function getUnitAt(pixel) {
 
 
 function displayTooltip(unit, pixel) {
-	tooltip.style = `
+	tooltip.style.cssText = `
 	position: absolute;
 	background-color: white;
 	top: ${pixel[1]}px;
@@ -227,7 +233,7 @@ function displayTooltip(unit, pixel) {
 }
 
 function hideTooltip() {
-	tooltip.style = 'display:none;'
+	tooltip.style.cssText = 'display:none;'
 }
 
 map.on('click', function (event) {
@@ -242,6 +248,99 @@ map.on('click', function (event) {
 map.on('movestart', function (event) {
 	hideTooltip();
 })
+
+map.on('moveend', function (event) {
+	updateZoom();
+})
+
+function updateZoom() {
+	var zoom = map.getView().getZoom()
+	var gridWidth = 1000
+	switch (zoom) {
+		case 14:
+			graticule.getStyle().setStroke(
+				new Stroke({
+					color: [130,125,125, 1],
+					width: 0.3,
+				})
+			)
+			break;
+		case 13:
+			graticule.getStyle().setStroke(
+				new Stroke({
+					color: [130,125,125, 1],
+					width: 0.1,
+				})
+			)
+			break;
+		case 12:
+			gridWidth = 2000
+			graticule.getStyle().setStroke(
+				new Stroke({
+					color: [130,125,125, 1],
+					width: 0.05,
+				})
+			)
+			break;
+		case 11:
+			gridWidth = 2500
+			graticule.getStyle().setStroke(
+				new Stroke({
+					color: [130,125,125, 1],
+					width: 0.02,
+				})
+			)
+			break;
+		case 10:
+			gridWidth = 3000
+			graticule.getStyle().setStroke(
+				new Stroke({
+					color: [130,125,125, 1],
+					width: 0.01,
+				})
+			)
+			break;
+		case 9:
+			gridWidth = 3500
+			graticule.getStyle().setStroke(
+				new Stroke({
+					color: [130,125,125, 1],
+					width: 0.005,
+				})
+			)
+			break;
+		case 8:
+			gridWidth = 4000
+			graticule.getStyle().setStroke(
+				new Stroke({
+					color: [130,125,125, 1],
+					width: 0.002,
+				})
+			)
+			break;
+		case 7:
+			gridWidth = 6000
+			graticule.getStyle().setStroke(
+				new Stroke({
+					color: [130,125,125, 1],
+					width: 0.001,
+				})
+			)
+			break;
+		default:
+			gridWidth = 8000
+			graticule.setStyle(new Style({
+				stroke: new Stroke({
+					color: [130,125,125, 1],
+					width: 0.001,
+				})
+			}))
+			break;
+	}
+	for (var unit of units) {
+		unit.updateZoom(gridWidth)
+	}
+}
 
 
 function rightClick(e) {
