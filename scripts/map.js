@@ -35,7 +35,7 @@ class Unit {
 		this.loc = loc
 	}
 	toRaw() {
-		return {id: this.feature.getId(), loc: loc}
+		return {id: this.feature.getId(), loc: this.loc}
 	}
 	get id() {
 		return this.feature.getId()
@@ -117,8 +117,8 @@ var map = new Map({
 var graticule = new Graticule({
 	style: new Style({
 		stroke: new Stroke({
-			color: [130,125,125],
 			width: 0.3,
+			color: ['black']
 		})
 	}),
 	borderWidth: 1,
@@ -177,6 +177,7 @@ function addUnit(loc, id) {
 	var unit = new Unit(loc, id)
 	vectorSource.addFeature(unit.feature)
 	units.push(unit)
+	updateZoom();
 	return unit
 }
 
@@ -260,7 +261,7 @@ function updateZoom() {
 		case 14:
 			graticule.getStyle().setStroke(
 				new Stroke({
-					color: [130,125,125, 1],
+					color: ['black'],
 					width: 0.3,
 				})
 			)
@@ -268,7 +269,7 @@ function updateZoom() {
 		case 13:
 			graticule.getStyle().setStroke(
 				new Stroke({
-					color: [130,125,125, 1],
+					color: ['black'],
 					width: 0.1,
 				})
 			)
@@ -277,61 +278,61 @@ function updateZoom() {
 			gridWidth = 2000
 			graticule.getStyle().setStroke(
 				new Stroke({
-					color: [130,125,125, 1],
+					color: ['black'],
 					width: 0.05,
 				})
 			)
 			break;
 		case 11:
-			gridWidth = 2500
+			gridWidth = 5000
 			graticule.getStyle().setStroke(
 				new Stroke({
-					color: [130,125,125, 1],
+					color: ['black'],
 					width: 0.02,
 				})
 			)
 			break;
 		case 10:
-			gridWidth = 3000
+			gridWidth = 10000
 			graticule.getStyle().setStroke(
 				new Stroke({
-					color: [130,125,125, 1],
+					color: ['black'],
 					width: 0.01,
 				})
 			)
 			break;
 		case 9:
-			gridWidth = 3500
+			gridWidth = 20000
 			graticule.getStyle().setStroke(
 				new Stroke({
-					color: [130,125,125, 1],
+					color: ['black'],
 					width: 0.005,
 				})
 			)
 			break;
 		case 8:
-			gridWidth = 4000
+			gridWidth = 30000
 			graticule.getStyle().setStroke(
 				new Stroke({
-					color: [130,125,125, 1],
+					color: ['black'],
 					width: 0.002,
 				})
 			)
 			break;
 		case 7:
-			gridWidth = 6000
+			gridWidth = 50000
 			graticule.getStyle().setStroke(
 				new Stroke({
-					color: [130,125,125, 1],
+					color: ['black'],
 					width: 0.001,
 				})
 			)
 			break;
 		default:
-			gridWidth = 8000
+			gridWidth = 150000
 			graticule.setStyle(new Style({
 				stroke: new Stroke({
-					color: [130,125,125, 1],
+					color: ['black'],
 					width: 0.001,
 				})
 			}))
