@@ -10,6 +10,8 @@ import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
 import {defaults as defaultControls, Control} from 'ol/control.js';
 import {defaults as defaultInteractions} from 'ol/interaction.js';
+import Graticule from 'ol-ext/control/Graticule.js';
+import {toLonLat} from 'ol/proj.js'
 
 
 var pointStyle = new Style({
@@ -88,7 +90,9 @@ var map = new Map({
     ]),
 	layers: [
 		new TileLayer({
-			source: new OSM()
+			source: new OSM({
+				url: 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png'
+			})
 		}),
 		new VectorLayer({
 			source: vectorSource
@@ -98,15 +102,29 @@ var map = new Map({
 	view: new View({
 		center: [ 2807000, 4852600 ],
 		zoom: 11,
-		minZoom: 2,
-		maxZoom: 18
+		minZoom: 6,
+		maxZoom: 14
 	}),
 	keyboardEventTarget: document
 });
 
 
-var units = []
+var coordinateDistanceOf1km = 1000*1.0/map.getView().getProjection().getMetersPerUnit()
 
+var degreesPerGridSquare = toLonLat([coordinateDistanceOf1km, 0])
+
+var graticule = new Graticule({
+	style: new Stroke({
+		color: [128, 127, 127, 0.8],
+		width: 2,
+	}),
+	step: 1000,
+	projection: 'EPSG:3857',
+});
+
+graticule.setMap(map)
+
+var units = []
 
 
 var url = "test.json";
@@ -148,6 +166,8 @@ function addUnit(loc, id) {
 			id = 0
 		}
 	}
+	loc[0] = Math.round(loc[0]/1000)*1000
+	loc[1] = Math.round(loc[1]/1000)*1000
 	var unit = new Unit(loc, id)
 	vectorSource.addFeature(unit.feature)
 	units.push(unit)
