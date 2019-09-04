@@ -88,7 +88,6 @@ var TooltipControl = (function (Control) {
 	TooltipControl.prototype.constructor = TooltipControl;
 
 	TooltipControl.prototype.receiveClick = function receiveClick () {
-		this.getMap().getView().setRotation(90);
 		//TODO
 	};
 
@@ -253,7 +252,20 @@ function displayTooltip(unit, pixel) {
 	left: ${pixel[0]}px;
 	display:block;
 	`
-	document.getElementById("tooltipHeader").innerHTML = unit.type
+	var tooltipTable = document.getElementById("tooltipTable")
+	tooltipTable.innerHTML = `
+	<tr>
+		<th>${unit.type}</th>
+	</tr>
+	`
+	for (var prop in unit.properties) {
+		tooltipTable.innerHTML += `
+		<tr>
+			<td>${prop}</td>
+			<td>${unit.properties[prop]}</td>
+		</tr>
+		`
+	}
 }
 
 function hideTooltip() {
