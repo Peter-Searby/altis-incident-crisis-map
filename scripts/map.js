@@ -294,88 +294,52 @@ function updateZoom() {
 	var gridWidth = 1000
 	switch (zoom) {
 		case 14:
-			graticule.getStyle().setStroke(
-				new Stroke({
-					color: ['black'],
-					width: 0.3,
-				})
-			)
+			setGraticuleWidth(0.3)
 			break;
 		case 13:
-			graticule.getStyle().setStroke(
-				new Stroke({
-					color: ['black'],
-					width: 0.1,
-				})
-			)
+			setGraticuleWidth(0.1)
 			break;
 		case 12:
 			gridWidth = 2000
-			graticule.getStyle().setStroke(
-				new Stroke({
-					color: ['black'],
-					width: 0.05,
-				})
-			)
+			setGraticuleWidth(0.05)
 			break;
 		case 11:
 			gridWidth = 5000
-			graticule.getStyle().setStroke(
-				new Stroke({
-					color: ['black'],
-					width: 0.02,
-				})
-			)
+			setGraticuleWidth(0.02)
 			break;
 		case 10:
 			gridWidth = 10000
-			graticule.getStyle().setStroke(
-				new Stroke({
-					color: ['black'],
-					width: 0.01,
-				})
-			)
+			setGraticuleWidth(0.01)
 			break;
 		case 9:
 			gridWidth = 20000
-			graticule.getStyle().setStroke(
-				new Stroke({
-					color: ['black'],
-					width: 0.005,
-				})
-			)
+			setGraticuleWidth(0.005)
 			break;
 		case 8:
 			gridWidth = 30000
-			graticule.getStyle().setStroke(
-				new Stroke({
-					color: ['black'],
-					width: 0.002,
-				})
-			)
+			setGraticuleWidth(0.002)
 			break;
 		case 7:
 			gridWidth = 50000
-			graticule.getStyle().setStroke(
-				new Stroke({
-					color: ['black'],
-					width: 0.001,
-				})
-			)
+			setGraticuleWidth(0.001)
 			break;
 		default:
 			gridWidth = 150000
-			graticule.setStyle(new Style({
-				stroke: new Stroke({
-					color: ['black'],
-					width: 0.001,
-				})
-			}))
+			setGraticuleWidth(0.001)
 			break;
 	}
 	for (var unit of units) {
 		unit.updateZoom(gridWidth)
 	}
+}
+
+function setGraticuleWidth(width) {
+	graticule.setStyle(new Style({
+		stroke: new Stroke({
+			color: ['black'],
+			width: width,
+		})
+	}))
 }
 
 
