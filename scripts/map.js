@@ -67,13 +67,8 @@ var TooltipControl = (function (Control) {
 	function TooltipControl(opt_options) {
 		var options = opt_options || {};
 
-		// var button = document.createElement('button');
-		// button.innerHTML = 'N';
-
 		tooltipElement.className = 'tooltip ol-unselectable ol-control';
 
-
-		// tooltipElement.appendChild(table);
 
 		Control.call(this, {
 			element: tooltipElement,
@@ -290,6 +285,14 @@ map.on('moveend', function (event) {
 })
 
 function updateZoom() {
+	function setGraticuleWidth(width) {
+		graticule.setStyle(new Style({
+			stroke: new Stroke({
+				color: ['black'],
+				width: width,
+			})
+		}))
+	}
 	var zoom = map.getView().getZoom()
 	var gridWidth = 1000
 	switch (zoom) {
@@ -333,15 +336,6 @@ function updateZoom() {
 	}
 }
 
-function setGraticuleWidth(width) {
-	graticule.setStyle(new Style({
-		stroke: new Stroke({
-			color: ['black'],
-			width: width,
-		})
-	}))
-}
-
 
 function rightClick(e) {
 	e.preventDefault()
@@ -349,12 +343,3 @@ function rightClick(e) {
 	var rawUnit = unit.toRaw()
 	sync('[{"type": "add", "unit": '+JSON.stringify(rawUnit)+'}]')
 }
-
-
-map.on('pointermove', function (event) {
-	// var pixel = map.getEventPixel(evt.originalEvent);
-});
-
-// map.on('dblclick', function (event) {
-// 	clearInterval(timer);
-// });
