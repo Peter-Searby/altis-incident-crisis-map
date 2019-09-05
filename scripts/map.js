@@ -127,16 +127,12 @@ var TooltipControl = (function (Control) {
 		var clickedElement = event.target
 		console.log(clickedElement.tagName)
 		if (clickedElement.tagName == "TD") {
-			console.log("here2")
 			var row = clickedElement.parentNode
 			if (row.classList.contains("unitGroup")) {
-			console.log("here3")
-				displayTooltip([getUnitById(clickedElement.id)], lastClick)
+				displayTooltip([getUnitById(row.id)], lastClick)
 			}
 		} else if (clickedElement.tagName == "TR") {
-			console.log("here4")
 			if (clickedElement.classList.contains("unitGroup")) {
-				console.log("here5")
 				displayTooltip([getUnitById(clickedElement.id)], lastClick)
 			}
 		}
