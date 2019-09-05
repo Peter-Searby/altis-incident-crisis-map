@@ -99,6 +99,8 @@ class UnitGroup {
 
 var vectorSource = new VectorSource()
 
+var lastClick = null
+
 
 var tooltipElement = document.getElementById('tooltip');
 
@@ -121,8 +123,23 @@ var TooltipControl = (function (Control) {
 	TooltipControl.prototype = Object.create( Control && Control.prototype );
 	TooltipControl.prototype.constructor = TooltipControl;
 
-	TooltipControl.prototype.receiveClick = function receiveClick () {
-		//TODO
+	TooltipControl.prototype.receiveClick = function receiveClick (event) {
+		var clickedElement = event.target
+		console.log(clickedElement.tagName)
+		if (clickedElement.tagName == "TD") {
+			console.log("here2")
+			var row = clickedElement.parentNode
+			if (row.classList.contains("unitGroup")) {
+			console.log("here3")
+				displayTooltip([getUnitById(clickedElement.id)], lastClick)
+			}
+		} else if (clickedElement.tagName == "TR") {
+			console.log("here4")
+			if (clickedElement.classList.contains("unitGroup")) {
+				console.log("here5")
+				displayTooltip([getUnitById(clickedElement.id)], lastClick)
+			}
+		}
 	};
 
 	return TooltipControl;
@@ -287,13 +304,13 @@ function displayTooltip(units, pixel) {
 	if (units.length == 1) {
 		var unit = units[0]
 		tooltipTable.innerHTML = `
-		<tr>
+		<tr class="tooltipHeader">
 			<th>${unit.type}</th>
 		</tr>
 		`
 		for (var prop in unit.properties) {
 			tooltipTable.innerHTML += `
-			<tr>
+			<tr class="singleUnit">
 				<td>${prop}</td>
 				<td>${unit.properties[prop]}</td>
 			</tr>
@@ -301,13 +318,13 @@ function displayTooltip(units, pixel) {
 		}
 	} else {
 		tooltipTable.innerHTML = `
-		<tr>
+		<tr class="tooltipHeader">
 			<th>Unit Group</th>
 		</tr>
 		`
 		for (var unit of units) {
 			tooltipTable.innerHTML += `
-			<tr>
+			<tr id=${unit.id} class="unitGroup">
 				<td>${unit.type}</td>
 				<td>${unit.properties.Size}</td>
 			</tr>
@@ -324,6 +341,7 @@ map.on('click', function (event) {
 	var unitsUnder = getUnitsAt(event.pixel)
 	if (unitsUnder.length != 0) {
 		displayTooltip(unitsUnder, event.pixel)
+		lastClick = event.pixel
 	} else {
 		hideTooltip();
 	}
@@ -411,4 +429,12 @@ function rightClick(e) {
 	var unit = addUnit(map.getCoordinateFromPixel([e.clientX, e.clientY]))
 	var rawUnit = unit.toRaw()
 	sync('[{"type": "add", "unit": '+JSON.stringify(rawUnit)+'}]')
+}
+
+function getUnitById(id) {
+	for (var unit of units) {
+		if (unit.id == id) {
+			return unit
+		}
+	}
 }
