@@ -14,27 +14,39 @@ import Graticule from 'ol-ext/control/Graticule.js';
 import {toLonLat} from 'ol/proj.js'
 
 
-var pointStyle = new Style({
-	image: new CircleStyle({
-		radius: 20,
-		fill: new Fill({color: 'blue'}),
-		stroke: new Stroke({color: 'black', width: 1})
-	}),
-	text: new Text({
-		font: '13px sans-serif',
-		text: "20k",
-		fill: new Fill({color: 'white'})
+function sizeToString(size) {
+	if (size >= 1000) {
+		return `${Math.round(size/1000)}k`
+	} else {
+		return `${size}`
+	}
+}
+
+function pointStyleGen(text) {
+	return new Style({
+		image: new CircleStyle({
+			radius: 20,
+			fill: new Fill({color: 'blue'}),
+			stroke: new Stroke({color: 'black', width: 1})
+		}),
+		text: new Text({
+			font: '13px sans-serif',
+			text: text,
+			fill: new Fill({color: 'white'})
+		})
 	})
-});
+}
 
 class Unit {
 	constructor(loc, id, type, properties) {
 		this.feature = new Feature(new Point(loc))
 		this.feature.setId(id)
-		this.feature.setStyle(pointStyle)
+		var style = pointStyleGen(sizeToString(properties["Size"]))
+		this.feature.setStyle(style)
 		this.loc = loc
 		this.type = type
 		this.properties = properties
+		this.display()
 	}
 	toRaw() {
 		return {
@@ -56,7 +68,34 @@ class Unit {
 			Math.round(this.loc[1]/gridWidth)*gridWidth]
 		)
 	}
+	hide() {
+		if (vectorSource.hasFeature(this.feature)){
+			vectorSource.removeFeature(this.feature)
+		}
+	}
+	display() {
+		vectorSource.addFeature(this.feature)
+	}
 }
+
+class UnitGroup {
+	constructor(unit) {
+		this.units = [unit]
+		this.feature = unit.feature
+	}
+	addUnit(unit) {
+		if (this.units.length == 1) {
+			this.units[0].hide()
+			this.feature = new Feature(new Point(unit.visualLoc))
+			this.feature.setStyle(pointStyleGen("..."))
+			vectorSource.addFeature(this.feature)
+		}
+		this.units.push(unit)
+		unit.hide()
+	}
+}
+
+
 
 var vectorSource = new VectorSource()
 
@@ -261,7 +300,19 @@ function displayTooltip(units, pixel) {
 			`
 		}
 	} else {
-		// TODO
+		tooltipTable.innerHTML = `
+		<tr>
+			<th>Unit Group</th>
+		</tr>
+		`
+		for (var unit of units) {
+			tooltipTable.innerHTML += `
+			<tr>
+				<td>${unit.type}</td>
+				<td>${unit.properties.Size}</td>
+			</tr>
+			`
+		}
 	}
 }
 
@@ -333,8 +384,24 @@ function updateZoom() {
 			setGraticuleWidth(0.001)
 			break;
 	}
+	var unitGroups = new Object()
+	vectorSource.clear()
 	for (var unit of units) {
 		unit.updateZoom(gridWidth)
+		var x = unit.visualLoc[0].toString()
+		var y = unit.visualLoc[1].toString()
+		if (unitGroups[y]) {
+			if (unitGroups[y][x]) {
+				unitGroups[y][x].addUnit(unit)
+			} else {
+				unitGroups[y][x] = new UnitGroup(unit)
+				unit.display()
+			}
+		} else {
+			unitGroups[y] = new Object()
+			unitGroups[y][x] = new UnitGroup(unit)
+			unit.display()
+		}
 	}
 }
 

@@ -8,7 +8,7 @@
 				"Speed": 50,
 				"Range": 5,
 				"Ammunition": 100,
-				"Size": 100,
+				"Size": 20000,
 				"Vision": 10,
 				"Concealment": 1
 			}
