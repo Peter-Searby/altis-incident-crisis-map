@@ -223,23 +223,20 @@ function getUnitFromFeature(feature) {
 	throw "Can't find unit with requested feature"
 }
 
-function getUnitAt(pixel) {
+function getUnitsAt(pixel) {
 	var foundUnits = []
 	for (var unit of units) {
 		var unitPixel = map.getPixelFromCoordinate(unit.visualLoc)
 		var distance = Math.hypot(unitPixel[0]-pixel[0]-15*unitPixel[0]/width, unitPixel[1] - pixel[1]-4*unitPixel[1]/height)
 		if (distance<22) {
-			foundUnits.push(unit, distance)
+			foundUnits.push(unit)
 		}
 	}
-	if (foundUnits.length>0) {
-		var sortedUnits = foundUnits.sort(function(a,b){return a[1]-b[1]})
-		return sortedUnits[0]
-	}
+	return foundUnits
 }
 
 
-function displayTooltip(unit, pixel) {
+function displayTooltip(units, pixel) {
 	tooltip.style.cssText = `
 	position: absolute;
 	background-color: white;
@@ -248,18 +245,23 @@ function displayTooltip(unit, pixel) {
 	display:block;
 	`
 	var tooltipTable = document.getElementById("tooltipTable")
-	tooltipTable.innerHTML = `
-	<tr>
-		<th>${unit.type}</th>
-	</tr>
-	`
-	for (var prop in unit.properties) {
-		tooltipTable.innerHTML += `
+	if (units.length == 1) {
+		var unit = units[0]
+		tooltipTable.innerHTML = `
 		<tr>
-			<td>${prop}</td>
-			<td>${unit.properties[prop]}</td>
+			<th>${unit.type}</th>
 		</tr>
 		`
+		for (var prop in unit.properties) {
+			tooltipTable.innerHTML += `
+			<tr>
+				<td>${prop}</td>
+				<td>${unit.properties[prop]}</td>
+			</tr>
+			`
+		}
+	} else {
+		// TODO
 	}
 }
 
@@ -268,9 +270,9 @@ function hideTooltip() {
 }
 
 map.on('click', function (event) {
-	var unitUnder = getUnitAt(event.pixel)
-	if (unitUnder) {
-		displayTooltip(unitUnder, event.pixel)
+	var unitsUnder = getUnitsAt(event.pixel)
+	if (unitsUnder.length != 0) {
+		displayTooltip(unitsUnder, event.pixel)
 	} else {
 		hideTooltip();
 	}
