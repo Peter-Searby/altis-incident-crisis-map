@@ -17,15 +17,33 @@ app.post('/server.js', function (req, res, next) {
 	var changes = req.body.changes
 	var mapJSON = JSON.parse(fs.readFileSync('data/map.json'))
 	for (var change of changes) {
-		if (change.type == "add") {
-			var id
-			if (mapJSON.units) {
-				id = mapJSON.units[mapJSON.units.length-1].id+1
-			} else {
-				id = 0
-			}
-			change.unit.id = id
-			mapJSON.units.push(change.unit)
+		switch (change.type) {
+			case "add":
+				var id
+				if (mapJSON.units) {
+					id = mapJSON.units[mapJSON.units.length-1].id+1
+				} else {
+					id = 0
+				}
+				change.unit.id = id
+				mapJSON.units.push(change.unit)
+
+				break;
+			case "move":
+				var id = change.unitId;
+				var newLocation = change.newLocation;
+				move: {
+					for (var unit of mapJSON.units) {
+						if (unit.id == id) {
+							unit.loc = newLocation
+							break move
+						}
+					}
+					console.log(`Invalid move made: id ${id} not found`)
+				}
+				break;
+			default:
+				console.log(`Unusual change requested: ${change.type}`)
 		}
 	}
 	var mapRaw = JSON.stringify(mapJSON)

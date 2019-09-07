@@ -422,9 +422,10 @@ function updateZoom() {
 
 function rightClick(e) {
 	e.preventDefault()
-	var unit = addUnit(map.getCoordinateFromPixel([e.clientX, e.clientY]))
+	var loc = map.getCoordinateFromPixel([e.clientX, e.clientY])
+	var unit = addUnit(loc)
 	var rawUnit = unit.toRaw()
-	sync('[{"type": "add", "unit": '+JSON.stringify(rawUnit)+'}]')
+	sync(`[{"type": "add", "unit": ${JSON.stringify(rawUnit)}}, {"type": "move", "unitId": ${unit.id}, "newLocation": [${loc[0]+1000}, ${loc[1]}]}]`)
 }
 
 function getUnitById(id) {
