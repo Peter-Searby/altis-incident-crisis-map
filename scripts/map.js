@@ -100,7 +100,7 @@ class UnitGroup {
 var vectorSource = new VectorSource()
 
 var lastClick = null
-
+var changes = []
 
 var tooltipElement = document.getElementById('tooltip');
 
@@ -209,7 +209,7 @@ map.on('postcompose', function(event) {
 
 
 map.render();
-sync('[]');
+sync();
 
 updateZoom();
 
@@ -249,7 +249,7 @@ function addUnit(loc, id, type, properties) {
 	return unit
 }
 
-function sync(changes) {
+function sync() {
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = function() {
 	    if (this.readyState == 4 && this.status == 200) {
@@ -263,7 +263,8 @@ function sync(changes) {
 	}
 	xmlhttp.open("POST", "server.js", true)
 	xmlhttp.setRequestHeader("Content-Type", "application/json")
-	xmlhttp.send('{"changes": '+changes+'}');
+	xmlhttp.send(JSON.stringify({"changes": changes}));
+	changes = []
 }
 
 function getUnitFromFeature(feature) {
@@ -425,7 +426,7 @@ function rightClick(e) {
 	var loc = map.getCoordinateFromPixel([e.clientX, e.clientY])
 	var unit = addUnit(loc)
 	var rawUnit = unit.toRaw()
-	sync(`[{"type": "add", "unit": ${JSON.stringify(rawUnit)}}, {"type": "move", "unitId": ${unit.id}, "newLocation": [${loc[0]+1000}, ${loc[1]}]}]`)
+	changes.push({type: "add", unit: rawUnit})
 }
 
 function getUnitById(id) {
@@ -435,3 +436,5 @@ function getUnitById(id) {
 		}
 	}
 }
+
+setInterval(sync, 1000)
