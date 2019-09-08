@@ -60,6 +60,8 @@ function handleSync(reqBody, mapJSON) {
 			response.nextTurnChange = turnChangeTime[reqBody.username]
 		}
 
+		// console.log(`time: ${(new Date()).getTime()}, test1: ${turnChangeTime.test1}, test2: ${turnChangeTime.test2}`)
+
 		fs.writeFileSync('data/map.json', mapRaw)
 	} else {
 		userAttemptAdminError(change.type)
@@ -128,11 +130,17 @@ function handleTurnChange(reqBody, mapJSON) {
 			nextTurnChange: turnChangeTime[reqBody.username],
 			turnTime: settings.turnTime
 		}
+		// console.log(`time: ${(new Date()).getTime()}, test1: ${turnChangeTime.test1}, test2: ${turnChangeTime.test2}`)
 
 		fs.writeFileSync('data/map.json', mapRaw)
 	} else {
-		console.log(`Out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser}`)
-		response = makeError(`out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser}`)
+		console.log(`Out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser} at time ${(new Date()).getTime()}`)
+		// response = makeError(`out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser}`)
+		response = {
+			mapState: mapJSON,
+			nextTurnChange: turnChangeTime[reqBody.username],
+			turnTime: settings.turnTime
+		}
 	}
 	return response
 }

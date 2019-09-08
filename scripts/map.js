@@ -450,10 +450,16 @@ function handleResponse() {
 				var timeToChange = nextTurnChange-d.getTime()
 				// console.log(`time to change: ${timeToChange}ms`)
 				turnTimer = setTimeout(turnChange, timeToChange)
+				if (syncNeedsRestarting) {
+					syncNeedsRestarting = false
+					repeatSync = setInterval(sync, 1000)
+					// console.log(`restarting sync. ${timeToChange}`)
+				}
 			}
 		}
 	}
 }
+var syncNeedsRestarting = false
 
 function sync() {
 	var xmlhttp = new XMLHttpRequest();
@@ -474,6 +480,7 @@ function sync() {
 }
 
 function turnChange() {
+	clearInterval(repeatSync)
 	// console.log("Starting turn change")
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = handleResponse
@@ -487,6 +494,7 @@ function turnChange() {
 	}
 	changes = []
 	xmlhttp.send(JSON.stringify(requestData));
+	syncNeedsRestarting = true
 }
 
 login()
