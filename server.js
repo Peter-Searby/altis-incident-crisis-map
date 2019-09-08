@@ -98,7 +98,7 @@ function handleTurnChange(reqBody, mapJSON) {
 		var mapRaw = JSON.stringify(mapJSON)
 		response = {
 			mapState: mapJSON,
-			nextTurnChange: nextTurnChange[reqBody.username]
+			nextTurnChange: turnChangeTime[reqBody.username]
 		}
 
 		fs.writeFileSync('data/map.json', mapRaw)
@@ -117,7 +117,7 @@ var logins = {
     "test2": "user test2 password"
 }
 
-var settings = fs.readFileSync('default-map.json')
+var settings = JSON.parse(fs.readFileSync('settings.json'))
 
 var turnChangeTime = {
 	"test1": d.getTime()+settings.turnTime,
