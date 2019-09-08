@@ -125,7 +125,6 @@ var TooltipControl = (function (Control) {
 
 	TooltipControl.prototype.receiveClick = function receiveClick (event) {
 		var clickedElement = event.target
-		console.log(clickedElement.tagName)
 		if (clickedElement.tagName == "TD") {
 			var row = clickedElement.parentNode
 			if (row.classList.contains("unitGroup")) {
@@ -190,6 +189,8 @@ var units = []
 var url = "test.json";
 var started = false;
 
+var selectedUnit = null
+
 var width = window.innerWidth
 || document.documentElement.clientWidth
 || document.body.clientWidth;
@@ -249,6 +250,11 @@ function addUnit(loc, id, type, properties) {
 	return unit
 }
 
+function moveUnit(unit, loc) {
+	unit.loc = loc
+	updateZoom();
+}
+
 function sync() {
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = function() {
@@ -300,6 +306,7 @@ function displayTooltip(units, pixel) {
 	var tooltipTable = document.getElementById("tooltipTable")
 	if (units.length == 1) {
 		var unit = units[0]
+		selectedUnit = unit
 		tooltipTable.innerHTML = `
 		<tr class="tooltipHeader">
 			<th>${unit.type}</th>
@@ -332,6 +339,7 @@ function displayTooltip(units, pixel) {
 
 function hideTooltip() {
 	tooltip.style.cssText = 'display:none;'
+	selectedUnit = null
 }
 
 map.on('click', function (event) {
@@ -362,43 +370,25 @@ function updateZoom() {
 		}))
 	}
 	var zoom = map.getView().getZoom()
-	var gridWidth = 1000
-	switch (zoom) {
-		case 14:
-			setGraticuleWidth(0.3)
-			break;
-		case 13:
-			setGraticuleWidth(0.1)
-			break;
-		case 12:
-			gridWidth = 2000
-			setGraticuleWidth(0.05)
-			break;
-		case 11:
-			gridWidth = 5000
-			setGraticuleWidth(0.02)
-			break;
-		case 10:
-			gridWidth = 10000
-			setGraticuleWidth(0.01)
-			break;
-		case 9:
-			gridWidth = 20000
-			setGraticuleWidth(0.005)
-			break;
-		case 8:
-			gridWidth = 30000
-			setGraticuleWidth(0.002)
-			break;
-		case 7:
-			gridWidth = 50000
-			setGraticuleWidth(0.001)
-			break;
-		default:
-			gridWidth = 150000
-			setGraticuleWidth(0.001)
-			break;
+	var gridWidth
+	if (zoom > 12) {
+		gridWidth = 1000
+	} else if (zoom > 11) {
+		gridWidth = 2000
+	} else if (zoom > 10) {
+		gridWidth = 5000
+	} else if (zoom > 9) {
+		gridWidth = 10000
+	} else if (zoom > 8) {
+		gridWidth = 20000
+	} else if (zoom > 7) {
+		gridWidth = 30000
+	} else if (zoom > 6) {
+		gridWidth = 50000
+	} else {
+		gridWidth = 150000
 	}
+	setGraticuleWidth((Math.exp(zoom-5)-1)/20000)
 	var unitGroups = new Object()
 	vectorSource.clear()
 	for (var unit of units) {
@@ -424,9 +414,15 @@ function updateZoom() {
 function rightClick(e) {
 	e.preventDefault()
 	var loc = map.getCoordinateFromPixel([e.clientX, e.clientY])
-	var unit = addUnit(loc)
-	var rawUnit = unit.toRaw()
-	changes.push({type: "add", unit: rawUnit})
+	if (selectedUnit) {
+		moveUnit(selectedUnit, loc)
+		changes.push({type: "move", unitId: selectedUnit.id, newLocation: loc})
+		hideTooltip()
+	} else {
+		var unit = addUnit(loc)
+		var rawUnit = unit.toRaw()
+		changes.push({type: "add", unit: rawUnit})
+	}
 }
 
 function getUnitById(id) {
