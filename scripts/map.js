@@ -190,6 +190,8 @@ var url = "test.json";
 var started = false;
 
 var selectedUnit = null
+var username
+var password
 
 var width = window.innerWidth
 || document.documentElement.clientWidth
@@ -210,7 +212,6 @@ map.on('postcompose', function(event) {
 
 
 map.render();
-sync();
 
 updateZoom();
 
@@ -253,24 +254,6 @@ function addUnit(loc, id, type, properties) {
 function moveUnit(unit, loc) {
 	unit.loc = loc
 	updateZoom();
-}
-
-function sync() {
-	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.onreadystatechange = function() {
-	    if (this.readyState == 4 && this.status == 200) {
-			var mapJSON = JSON.parse(this.responseText)
-			units = []
-			vectorSource.clear()
-			for (var rawUnit of mapJSON.units) {
-				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.properties)
-			}
-		}
-	}
-	xmlhttp.open("POST", "server.js", true)
-	xmlhttp.setRequestHeader("Content-Type", "application/json")
-	xmlhttp.send(JSON.stringify({"changes": changes}));
-	changes = []
 }
 
 function getUnitFromFeature(feature) {
@@ -433,4 +416,49 @@ function getUnitById(id) {
 	}
 }
 
-setInterval(sync, 1000)
+function sync() {
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = function() {
+	    if (this.readyState == 4 && this.status == 200) {
+			var mapJSON = JSON.parse(this.responseText)
+			var error = mapJSON.error
+			if (error) {
+				console.log(error)
+				clearInterval(repeatSync)
+				alert(`Error: ${error}`)
+				login()
+			} else {
+				units = []
+				vectorSource.clear()
+				for (var rawUnit of mapJSON.units) {
+					addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.properties)
+				}
+			}
+		}
+	}
+	xmlhttp.open("POST", "server.js", true)
+	xmlhttp.setRequestHeader("Content-Type", "application/json")
+	xmlhttp.send(JSON.stringify({changes: changes, username: username, password: password}));
+	changes = []
+}
+
+login()
+var repeatSync
+
+function login() {
+	var usernameEntered = prompt("If you are reading this then contact an admin to log you in.\n\nusername:")
+	if (usernameEntered != null) {
+		username = String(usernameEntered)
+		var passwordEntered = prompt("If you are reading this then contact an admin to log you in.\n\npassword:")
+		if (passwordEntered != null) {
+			password = String(passwordEntered)
+		} else {
+			return
+		}
+	} else {
+		return
+	}
+
+	sync();
+	repeatSync = setInterval(sync, 1000)
+}
