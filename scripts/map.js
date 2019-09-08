@@ -11,7 +11,8 @@ import VectorLayer from 'ol/layer/Vector';
 import {defaults as defaultControls, Control} from 'ol/control.js';
 import {defaults as defaultInteractions} from 'ol/interaction.js';
 import Graticule from 'ol-ext/control/Graticule.js';
-import {toLonLat} from 'ol/proj.js'
+import {toLonLat} from 'ol/proj.js';
+import Button from 'ol-ext/control/Button.js';
 
 
 function sizeToString(size) {
@@ -98,7 +99,6 @@ class UnitGroup {
 
 
 var vectorSource = new VectorSource()
-
 var lastClick = null
 var changes = []
 
@@ -183,12 +183,16 @@ var graticule = new Graticule({
 
 graticule.setMap(map)
 
+var turnTimer
+
+var turnTimeButton
+
+
 var units = []
 
 
 var url = "test.json";
 var started = false;
-var nextTurnChange = null
 
 var selectedUnit = null
 var username
@@ -427,15 +431,25 @@ function handleResponse() {
 		var error = responseJSON.error
 		if (error) {
 			console.log(error)
-			clearInterval(repeatSync)
 			alert(`Error: ${error}`)
-			login()
+			if (error == "Wrong password") {
+				clearInterval(repeatSync)
+				login()
+			}
 		} else {
 			var mapJSON = responseJSON.mapState
 			units = []
 			vectorSource.clear()
 			for (var rawUnit of mapJSON.units) {
 				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.properties)
+			}
+			if (username != "admin") {
+				var nextTurnChange = responseJSON.nextTurnChange
+				clearTimeout(turnTimer)
+				var d = new Date()
+				var timeToChange = nextTurnChange-d.getTime()
+				// console.log(`time to change: ${timeToChange}ms`)
+				turnTimer = setTimeout(turnChange, timeToChange)
 			}
 		}
 	}
@@ -460,6 +474,7 @@ function sync() {
 }
 
 function turnChange() {
+	// console.log("Starting turn change")
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = handleResponse
 	xmlhttp.open("POST", "server.js", true)
@@ -492,5 +507,18 @@ function login() {
 	}
 
 	sync();
+	if (username == "admin") {
+		turnTimeButton = new Button ({
+			html: '<i class="material-icons">av_timer</i>',
+			className: "turnTime",
+			title: "Set turn time",
+			handleClick: function() {
+				var time = prompt("New turn time (per user) in seconds: ", "60")
+				changes.push({type: "setTurnTime", time: parseInt(time)})
+			}
+		});
+		map.addControl(turnTimeButton);
+	}
+
 	repeatSync = setInterval(sync, 1000)
 }

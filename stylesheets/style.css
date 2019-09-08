@@ -10,3 +10,12 @@
 	position: absolute;
 	display: none;
 }
+
+.ol-button i {
+	color: inherit;
+}
+
+.turnTime {
+	right: 50%;
+	top: 0.5em;
+}

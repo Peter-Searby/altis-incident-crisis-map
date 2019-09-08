@@ -42,14 +42,21 @@ function handleSync(reqBody, mapJSON) {
 						console.log(`Invalid move made: id ${id} not found`)
 					}
 					break;
+				case "setTurnTime":
+					settings.turnTime = change.time*1000
+					break;
 				default:
 					console.log(`Unusual change requested: ${change.type}`)
 			}
 		}
 
 		var mapRaw = JSON.stringify(mapJSON)
-		response = {mapState: mapJSON}
+		response = {
+			mapState: mapJSON,
+			turnTime: settings.turnTime
+		}
 		if (reqBody.username != "admin") {
+			checkForMissingUsers()
 			response.nextTurnChange = turnChangeTime[reqBody.username]
 		}
 
@@ -61,8 +68,24 @@ function handleSync(reqBody, mapJSON) {
 	return response
 }
 
+function increaseTurnTimer(u) {
+	var usersCount = Object.keys(users).length
+	var previousUser = users[(users.indexOf(u)-1+usersCount) % usersCount]
+	turnChangeTime[u] = turnChangeTime[previousUser]+settings.turnTime
+}
+
+function checkForMissingUsers() {
+	var t = (new Date()).getTime()
+	for (var u in turnChangeTime) {
+		if (turnChangeTime[u] + 2000 < t) {
+			increaseTurnTimer(u)
+		}
+	}
+}
+
 function getNextTurnUser() {
-	var nextUser = turnChangeTime[0]
+	var nextUser = Object.keys(turnChangeTime)[0]
+	var t = (new Date()).getTime()
 	for (var u in turnChangeTime) {
 		if (turnChangeTime[u] < turnChangeTime[nextUser]) {
 			nextUser = u
@@ -72,8 +95,11 @@ function getNextTurnUser() {
 }
 
 function handleTurnChange(reqBody, mapJSON) {
-	if (reqBody.username == getNextTurnUser()) {
-		nextTurnChange[username] = d.getTime()+settings.turnTime*turnChangeTime.length
+	// console.log("Starting turn change")
+	var nextUser = getNextTurnUser()
+	if (reqBody.username == nextUser) {
+		var d = new Date()
+		increaseTurnTimer(reqBody.username)
 		var changes = reqBody.changes
 		for (var change of changes) {
 			switch (change.type) {
@@ -96,14 +122,17 @@ function handleTurnChange(reqBody, mapJSON) {
 		}
 
 		var mapRaw = JSON.stringify(mapJSON)
+		checkForMissingUsers()
 		response = {
 			mapState: mapJSON,
-			nextTurnChange: turnChangeTime[reqBody.username]
+			nextTurnChange: turnChangeTime[reqBody.username],
+			turnTime: settings.turnTime
 		}
 
 		fs.writeFileSync('data/map.json', mapRaw)
 	} else {
-		response = makeError("out of turn - turn change")
+		console.log(`Out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser}`)
+		response = makeError(`out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser}`)
 	}
 	return response
 }
@@ -111,17 +140,19 @@ function handleTurnChange(reqBody, mapJSON) {
 
 var d = new Date()
 
+var users = ["test1", "test2"]
+
 var logins = {
     "admin": "hopefully this doesnt need to be secure",
-    "test1": "user test password",
-    "test2": "user test2 password"
+    [users[0]]: "user test password",
+    [users[1]]: "user test2 password"
 }
 
 var settings = JSON.parse(fs.readFileSync('settings.json'))
 
 var turnChangeTime = {
-	"test1": d.getTime()+settings.turnTime,
-	"test2": d.getTime()+settings.turnTime*2
+	[users[0]]: d.getTime()+settings.turnTime,
+	[users[1]]: d.getTime()+settings.turnTime*2
 }
 
 
