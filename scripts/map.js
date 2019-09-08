@@ -188,6 +188,7 @@ var units = []
 
 var url = "test.json";
 var started = false;
+var nextTurnChange = null
 
 var selectedUnit = null
 var username
@@ -398,13 +399,17 @@ function rightClick(e) {
 	e.preventDefault()
 	var loc = map.getCoordinateFromPixel([e.clientX, e.clientY])
 	if (selectedUnit) {
-		moveUnit(selectedUnit, loc)
+		if (username == "admin") {
+			moveUnit(selectedUnit, loc)
+		}
 		changes.push({type: "move", unitId: selectedUnit.id, newLocation: loc})
 		hideTooltip()
 	} else {
-		var unit = addUnit(loc)
-		var rawUnit = unit.toRaw()
-		changes.push({type: "add", unit: rawUnit})
+		if (username == "admin") {
+			var unit = addUnit(loc)
+			var rawUnit = unit.toRaw()
+			changes.push({type: "add", unit: rawUnit})
+		}
 	}
 }
 
@@ -416,30 +421,57 @@ function getUnitById(id) {
 	}
 }
 
-function sync() {
-	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.onreadystatechange = function() {
-	    if (this.readyState == 4 && this.status == 200) {
-			var mapJSON = JSON.parse(this.responseText)
-			var error = mapJSON.error
-			if (error) {
-				console.log(error)
-				clearInterval(repeatSync)
-				alert(`Error: ${error}`)
-				login()
-			} else {
-				units = []
-				vectorSource.clear()
-				for (var rawUnit of mapJSON.units) {
-					addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.properties)
-				}
+function handleResponse() {
+	if (this.readyState == 4 && this.status == 200) {
+		var responseJSON = JSON.parse(this.responseText)
+		var error = responseJSON.error
+		if (error) {
+			console.log(error)
+			clearInterval(repeatSync)
+			alert(`Error: ${error}`)
+			login()
+		} else {
+			var mapJSON = responseJSON.mapState
+			units = []
+			vectorSource.clear()
+			for (var rawUnit of mapJSON.units) {
+				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.properties)
 			}
 		}
 	}
+}
+
+function sync() {
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = handleResponse
 	xmlhttp.open("POST", "server.js", true)
 	xmlhttp.setRequestHeader("Content-Type", "application/json")
-	xmlhttp.send(JSON.stringify({changes: changes, username: username, password: password}));
+	var requestData = {
+		requestType: "sync",
+		changes: [],
+		username: username,
+		password: password
+	}
+	if (username == "admin") {
+		requestData.changes = changes
+		changes = []
+	}
+	xmlhttp.send(JSON.stringify(requestData));
+}
+
+function turnChange() {
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = handleResponse
+	xmlhttp.open("POST", "server.js", true)
+	xmlhttp.setRequestHeader("Content-Type", "application/json")
+	var requestData = {
+		requestType: "turnChange",
+		changes: changes,
+		username: username,
+		password: password
+	}
 	changes = []
+	xmlhttp.send(JSON.stringify(requestData));
 }
 
 login()
