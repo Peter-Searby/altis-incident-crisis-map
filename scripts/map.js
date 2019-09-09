@@ -1,6 +1,6 @@
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
-import {MultiPoint, Point} from 'ol/geom.js';
+import {MultiPoint, Point, LineString} from 'ol/geom.js';
 import TileLayer from 'ol/layer/Tile.js';
 import OSM from 'ol/source/OSM.js';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
@@ -99,6 +99,7 @@ class UnitGroup {
 
 
 var vectorSource = new VectorSource()
+var movesSource = new VectorSource()
 var lastClick = null
 var changes = []
 
@@ -152,6 +153,9 @@ var map = new Map({
 			source: new OSM({
 				url: 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png'
 			})
+		}),
+		new VectorLayer({
+			source: movesSource
 		}),
 		new VectorLayer({
 			source: vectorSource
@@ -212,6 +216,7 @@ map.setSize([width, height*0.98])
 
 
 map.on('postcompose', function(event) {
+
 	map.render()
 });
 
@@ -259,6 +264,14 @@ function addUnit(loc, id, type, properties) {
 function moveUnit(unit, loc) {
 	unit.loc = loc
 	updateZoom();
+}
+
+function moveCommand(unit, loc) {
+	var origLoc = unit.loc
+	movesSource.addFeature(new Feature(new LineString([
+		origLoc,
+		loc
+	])))
 }
 
 function getUnitFromFeature(feature) {
@@ -405,6 +418,8 @@ function rightClick(e) {
 	if (selectedUnit) {
 		if (username == "admin") {
 			moveUnit(selectedUnit, loc)
+		} else {
+			moveCommand(selectedUnit, loc)
 		}
 		changes.push({type: "move", unitId: selectedUnit.id, newLocation: loc})
 		hideTooltip()
@@ -495,6 +510,7 @@ function turnChange() {
 	changes = []
 	xmlhttp.send(JSON.stringify(requestData));
 	syncNeedsRestarting = true
+	movesSource.clear()
 }
 
 login()
