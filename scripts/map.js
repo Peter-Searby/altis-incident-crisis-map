@@ -14,6 +14,7 @@ import Graticule from 'ol-ext/control/Graticule.js';
 import {toLonLat} from 'ol/proj.js';
 import Button from 'ol-ext/control/Button.js';
 import Dialog from 'ol-ext/control/Dialog.js'
+import Overlay from 'ol-ext/control/Overlay.js'
 
 
 function sizeToString(size) {
@@ -192,6 +193,30 @@ graticule.setMap(map)
 // Prompt dialog
 var dialogPromptUser = new Dialog()
 var dialogPromptPassword = new Dialog()
+
+var nextTurnChange = null
+var isUsersTurn = false
+
+function getTurnManagerContent() {
+	var nextTurnString = "never"
+	if (nextTurnChange != null) {
+		nextTurnString = `${Math.round((nextTurnChange-(new Date()).getTime())/1000)}s`
+	}
+	var disabledString = ""
+	if (!isUsersTurn) {
+		disabledString = " disabled"
+	}
+	return `Next turn: ${nextTurnString}<br/><button id="endTurnButton" type='button'${disabledString}>End Turn</button>`
+}
+
+// Turn change overlay
+var turnManager = new Overlay({
+	closeBox: false,
+	className: "turn-change overlay",
+	content: getTurnManagerContent()
+})
+
+map.addControl(turnManager)
 
 var turnTimer
 
@@ -465,7 +490,8 @@ function handleResponse() {
 				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.properties)
 			}
 			if (username != "admin") {
-				var nextTurnChange = responseJSON.nextTurnChange
+				nextTurnChange = responseJSON.nextTurnChange
+				isUsersTurn = responseJSON.isCorrectTurn
 				clearTimeout(turnTimer)
 				var d = new Date()
 				var timeToChange = nextTurnChange-d.getTime()
@@ -520,7 +546,38 @@ function turnChange() {
 }
 
 login()
+
 var repeatSync
+
+var turnTimeUpdater
+
+function updateTurnTime() {
+	turnManager.setContent(getTurnManagerContent())
+	document.getElementById("endTurnButton").onclick = endTurnEarly
+}
+
+function endTurnEarly() {
+	clearTimeout(turnTimer)
+	turnChange()
+}
+
+function start() {
+	sync();
+	if (username == "admin") {
+		turnTimeButton = new Button ({
+			html: '<i class="material-icons">av_timer</i>',
+			className: "turnTime",
+			title: "Set turn time",
+			handleClick: function() {
+				var time = prompt("New turn time (per user) in seconds: ", "60")
+				changes.push({type: "setTurnTime", time: parseInt(time)})
+			}
+		});
+		map.addControl(turnTimeButton);
+	}
+	turnTimeUpdater = setInterval(updateTurnTime, 500)
+	repeatSync = setInterval(sync, 1000)
+}
 
 function login() {
 	dialogPromptUser.setContent({
@@ -545,21 +602,7 @@ function login() {
 	dialogPromptPassword.on('button', function (e) {
 		password = e.inputs['passwordValue'].value
 
-		sync();
-		if (username == "admin") {
-			turnTimeButton = new Button ({
-				html: '<i class="material-icons">av_timer</i>',
-				className: "turnTime",
-				title: "Set turn time",
-				handleClick: function() {
-					var time = prompt("New turn time (per user) in seconds: ", "60")
-					changes.push({type: "setTurnTime", time: parseInt(time)})
-				}
-			});
-			map.addControl(turnTimeButton);
-		}
-
-		repeatSync = setInterval(sync, 1000)
+		start()
 	})
 
 	map.addControl(dialogPromptUser)

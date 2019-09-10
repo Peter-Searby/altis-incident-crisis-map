@@ -22,3 +22,10 @@
 	right: 50%;
 	top: 0.5em;
 }
+
+.turn-change {
+	position: absolute;
+	top: 0%;
+	right: 0%;
+	background-color: white
+}

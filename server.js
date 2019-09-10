@@ -58,6 +58,7 @@ function handleSync(reqBody, mapJSON) {
 		if (reqBody.username != "admin") {
 			checkForMissingUsers()
 			response.nextTurnChange = turnChangeTime[reqBody.username]
+			response.isCorrectTurn = getNextTurnUser() == reqBody.username
 		}
 
 		// console.log(`time: ${(new Date()).getTime()}, test1: ${turnChangeTime.test1}, test2: ${turnChangeTime.test2}`)
@@ -70,25 +71,37 @@ function handleSync(reqBody, mapJSON) {
 	return response
 }
 
-function increaseTurnTimer(u) {
-	var usersCount = Object.keys(users).length
-	var previousUser = users[(users.indexOf(u)-1+usersCount) % usersCount]
-	turnChangeTime[u] = turnChangeTime[previousUser]+settings.turnTime
+function advanceTurnTimer(offset) {
+	if (offset === undefined) {
+		offset = 0
+	}
+	var usersCount = users.length
+	var nextUser = getNextTurnUser()
+
+	var nextUserIndex = users.indexOf(nextUser)
+
+	var previousUser
+	var i = (nextUserIndex+1) % usersCount
+	turnChangeTime[users[i]] = (new Date()).getTime()+settings.turnTime + offset
+
+	while (i != nextUserIndex) {
+		previousUser = users[i]
+		i = (i+1) % usersCount
+		turnChangeTime[users[i]] = turnChangeTime[previousUser]+settings.turnTime
+	}
 }
 
 function checkForMissingUsers() {
 	var t = (new Date()).getTime()
-	for (var u in turnChangeTime) {
-		if (turnChangeTime[u] + 2000 < t) {
-			increaseTurnTimer(u)
-		}
+	var u = getNextTurnUser()
+	if (turnChangeTime[u] + 2000 < t) {
+		advanceTurnTimer(-2000)
 	}
 }
 
 function getNextTurnUser() {
-	var nextUser = Object.keys(turnChangeTime)[0]
-	var t = (new Date()).getTime()
-	for (var u in turnChangeTime) {
+	var nextUser = users[0]
+	for (var u of users) {
 		if (turnChangeTime[u] < turnChangeTime[nextUser]) {
 			nextUser = u
 		}
@@ -99,9 +112,10 @@ function getNextTurnUser() {
 function handleTurnChange(reqBody, mapJSON) {
 	// console.log("Starting turn change")
 	var nextUser = getNextTurnUser()
-	if (reqBody.username == nextUser) {
+	var isCorrectTurn = reqBody.username == nextUser
+	if (isCorrectTurn) {
 		var d = new Date()
-		increaseTurnTimer(reqBody.username)
+		advanceTurnTimer()
 		var changes = reqBody.changes
 		for (var change of changes) {
 			switch (change.type) {
@@ -128,7 +142,7 @@ function handleTurnChange(reqBody, mapJSON) {
 		response = {
 			mapState: mapJSON,
 			nextTurnChange: turnChangeTime[reqBody.username],
-			turnTime: settings.turnTime
+			turnTime: isCorrectTurn
 		}
 		// console.log(`time: ${(new Date()).getTime()}, test1: ${turnChangeTime.test1}, test2: ${turnChangeTime.test2}`)
 
@@ -139,7 +153,7 @@ function handleTurnChange(reqBody, mapJSON) {
 		response = {
 			mapState: mapJSON,
 			nextTurnChange: turnChangeTime[reqBody.username],
-			turnTime: settings.turnTime
+			isCorrectTurn: isCorrectTurn
 		}
 	}
 	return response
