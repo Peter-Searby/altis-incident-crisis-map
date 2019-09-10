@@ -1,3 +1,6 @@
+@import '../node_modules/ol-ext/control/Dialog.css';
+
+
 #minimap {
 	position: absolute;
 	top: 65%;

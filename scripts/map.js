@@ -13,6 +13,7 @@ import {defaults as defaultInteractions} from 'ol/interaction.js';
 import Graticule from 'ol-ext/control/Graticule.js';
 import {toLonLat} from 'ol/proj.js';
 import Button from 'ol-ext/control/Button.js';
+import Dialog from 'ol-ext/control/Dialog.js'
 
 
 function sizeToString(size) {
@@ -186,6 +187,11 @@ var graticule = new Graticule({
 });
 
 graticule.setMap(map)
+
+
+// Prompt dialog
+var dialogPromptUser = new Dialog()
+var dialogPromptPassword = new Dialog()
 
 var turnTimer
 
@@ -517,32 +523,47 @@ login()
 var repeatSync
 
 function login() {
-	var usernameEntered = prompt("If you are reading this then contact an admin to log you in.\n\nusername:")
-	if (usernameEntered != null) {
-		username = String(usernameEntered)
-		var passwordEntered = prompt("If you are reading this then contact an admin to log you in.\n\npassword:")
-		if (passwordEntered != null) {
-			password = String(passwordEntered)
-		} else {
-			return
+	dialogPromptUser.setContent({
+		content: 'If you are reading this then contact an admin to log you in.<br/>username:<input class="usernameValue" autofocus/>',
+		title: 'Login',
+		buttons:{submit:'Submit'}
+	})
+	dialogPromptUser.on('button', function (e) {
+		if (e.button === 'submit') {
+			username = e.inputs['usernameValue'].value
+
+			dialogPromptPassword.show()
+			document.getElementById("passwordInput").focus()
 		}
-	} else {
-		return
-	}
+	})
 
-	sync();
-	if (username == "admin") {
-		turnTimeButton = new Button ({
-			html: '<i class="material-icons">av_timer</i>',
-			className: "turnTime",
-			title: "Set turn time",
-			handleClick: function() {
-				var time = prompt("New turn time (per user) in seconds: ", "60")
-				changes.push({type: "setTurnTime", time: parseInt(time)})
-			}
-		});
-		map.addControl(turnTimeButton);
-	}
+	dialogPromptPassword.setContent({
+		content: 'If you are reading this then contact an admin to log you in.<br/>password:<input type="password" id="passwordInput" class="passwordValue" autofocus/>',
+		title: 'Login',
+		buttons:{submit:'Submit', cancel:'Cancel'}
+	})
+	dialogPromptPassword.on('button', function (e) {
+		password = e.inputs['passwordValue'].value
 
-	repeatSync = setInterval(sync, 1000)
+		sync();
+		if (username == "admin") {
+			turnTimeButton = new Button ({
+				html: '<i class="material-icons">av_timer</i>',
+				className: "turnTime",
+				title: "Set turn time",
+				handleClick: function() {
+					var time = prompt("New turn time (per user) in seconds: ", "60")
+					changes.push({type: "setTurnTime", time: parseInt(time)})
+				}
+			});
+			map.addControl(turnTimeButton);
+		}
+
+		repeatSync = setInterval(sync, 1000)
+	})
+
+	map.addControl(dialogPromptUser)
+	map.addControl(dialogPromptPassword)
+
+	dialogPromptUser.show()
 }
