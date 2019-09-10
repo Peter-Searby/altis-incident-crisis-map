@@ -162,7 +162,7 @@ function handleTurnChange(reqBody, mapJSON) {
 
 var d = new Date()
 
-var users = ["test1", "test2"]
+var users = ["Blufor", "Opfor"]
 
 var logins = {
     "admin": "hopefully this doesnt need to be secure",

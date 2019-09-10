@@ -577,6 +577,15 @@ function start() {
 	}
 	turnTimeUpdater = setInterval(updateTurnTime, 500)
 	repeatSync = setInterval(sync, 1000)
+
+	// Title
+	var turnManager = new Overlay({
+		closeBox: false,
+		className: "title",
+		content: username
+	})
+
+	map.addControl(turnManager)
 }
 
 function login() {
