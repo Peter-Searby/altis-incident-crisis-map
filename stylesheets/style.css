@@ -19,13 +19,17 @@
 	right:0%
 }
 
+#createUnitButton {
+	width: auto;
+}
+
 .ol-button i {
 	color: inherit;
 }
 
 .turnTime {
 	right: 50%;
-	top: 0.5em;
+	top: 1em;
 }
 
 .turn-change {

@@ -3,12 +3,12 @@
 		{
 			"id": 0,
 			"loc": [2807000, 4852600],
-			"Unit Type": "Carrier",
+			"type": "Carrier",
+			"size": 20000,
 			"properties": {
 				"Speed": 50,
 				"Range": 5,
 				"Ammunition": 100,
-				"Size": 20000,
 				"Vision": 10,
 				"Concealment": 1
 			}

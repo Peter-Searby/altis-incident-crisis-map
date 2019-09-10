@@ -41,10 +41,10 @@ function pointStyleGen(text) {
 }
 
 class Unit {
-	constructor(loc, id, type, properties) {
+	constructor(loc, id, type, size, properties) {
 		this.feature = new Feature(new Point(loc))
 		this.feature.setId(id)
-		var style = pointStyleGen(sizeToString(properties["Size"]))
+		var style = pointStyleGen(sizeToString(size))
 		this.feature.setStyle(style)
 		this.loc = loc
 		this.type = type
@@ -225,6 +225,11 @@ var turnTimeButton
 
 var units = []
 
+// Data stuff
+
+
+
+
 
 var url = "test.json";
 var started = false;
@@ -256,18 +261,7 @@ map.render();
 
 updateZoom();
 
-var defaultUnitProperties = {
-	"Speed": 50,
-	"Range": 5,
-	"Ammunition": 100,
-	"Size": 100,
-	"Vision": 10,
-	"Concealment": 1
-}
-
-var defaultUnitType = "Carrier"
-
-function addUnit(loc, id, type, properties) {
+function addUnit(loc, id, type, size, properties) {
 	if (id == undefined) {
 		if (units) {
 			id = units[units.length-1].id+1
@@ -285,7 +279,7 @@ function addUnit(loc, id, type, properties) {
 		properties = defaultUnitProperties
 	}
 
-	var unit = new Unit(loc, id, type, properties)
+	var unit = new Unit(loc, id, type, size, properties)
 	vectorSource.addFeature(unit.feature)
 	units.push(unit)
 	updateZoom();
@@ -328,7 +322,7 @@ function getUnitsAt(pixel) {
 
 
 function displayTooltip(units, pixel) {
-	tooltip.style.cssText = `
+	tooltipElement.style.cssText = `
 	position: absolute;
 	background-color: white;
 	top: ${pixel[1]}px;
@@ -369,8 +363,41 @@ function displayTooltip(units, pixel) {
 	}
 }
 
+function createUnit(loc, type, size) {
+	changes.push({type: "add", type: type, size: size, loc: loc})
+}
+
+function displayRightTooltip(pixel) {
+	tooltipElement.style.cssText = `
+	position: absolute;
+	background-color: white;
+	top: ${pixel[1]}px;
+	left: ${pixel[0]}px;
+	display:block;
+	`
+	var tooltipTable = document.getElementById("tooltipTable")
+	tooltipTable.innerHTML = `
+	<tr class="tooltipHeader">
+		<th>New Unit</th>
+	</tr><tr>
+		<td>type:</td><td><select id="typeEntry">
+	`
+	for (var type of typeList) {
+		tooltipTable.innerHTML += `<option value="${type}">${type}</option>`
+	}
+
+	tooltipTable.innerHTML += `
+		</select></td>
+	</tr><tr>
+		<td>size:</td><td><input id="sizeEntry"/></td>
+	</tr><tr>
+		<td/><td><button type="button" id="createUnitButton"/>Create</td>
+	</tr>
+	`
+}
+
 function hideTooltip() {
-	tooltip.style.cssText = 'display:none;'
+	tooltipElement.style.cssText = 'display:none;'
 	selectedUnit = null
 }
 
@@ -456,9 +483,7 @@ function rightClick(e) {
 		hideTooltip()
 	} else {
 		if (username == "admin") {
-			var unit = addUnit(loc)
-			var rawUnit = unit.toRaw()
-			changes.push({type: "add", unit: rawUnit})
+			displayRightTooltip([e.clientX, e.clientY])
 		}
 	}
 }
@@ -487,7 +512,7 @@ function handleResponse() {
 			units = []
 			vectorSource.clear()
 			for (var rawUnit of mapJSON.units) {
-				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.properties)
+				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.size, rawUnit.properties)
 			}
 			if (username != "admin") {
 				nextTurnChange = responseJSON.nextTurnChange
