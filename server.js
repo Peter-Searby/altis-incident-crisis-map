@@ -14,16 +14,19 @@ function makeError(error) {
 	return {error: error}
 }
 
-function createUnit(id, loc, type, size) {
+function createUnit(id, loc, type, user) {
 	return {
 		id: id,
 		loc: loc,
 		type: type,
-		size: size,
+		user: user,
 		properties: unitTypes[type]
 	}
 }
 
+function restrictMapView(mapJSON, user) {
+	return mapJSON
+}
 
 function handleSync(reqBody, mapJSON) {
 	var changes = reqBody.changes
@@ -38,7 +41,7 @@ function handleSync(reqBody, mapJSON) {
 						id = 0
 					}
 
-					mapJSON.units.push(createUnit(id, change.loc, change.unitType, change.size))
+					mapJSON.units.push(createUnit(id, change.loc, change.unitType, change.user))
 
 					break;
 				case "move":
@@ -64,11 +67,14 @@ function handleSync(reqBody, mapJSON) {
 
 		var mapRaw = JSON.stringify(mapJSON)
 		response = {
-			mapState: mapJSON,
-			turnTime: settings.turnTime,
-			unitTypes: Object.keys(unitTypes)
+			mapState: restrictMapView(mapJSON, reqBody.username),
+			turnTime: settings.turnTime
 		}
-		if (reqBody.username != "admin") {
+
+		if (reqBody.username == "admin") {
+			response.unitTypes = Object.keys(unitTypes)
+			response.usersList = users
+		} else {
 			checkForMissingUsers()
 			response.nextTurnChange = turnChangeTime[reqBody.username]
 			response.isCorrectTurn = getNextTurnUser() == reqBody.username
@@ -155,8 +161,11 @@ function handleTurnChange(reqBody, mapJSON) {
 		response = {
 			mapState: mapJSON,
 			nextTurnChange: turnChangeTime[reqBody.username],
-			turnTime: isCorrectTurn,
-			unitTypes: Object.keys(unitTypes)
+			turnTime: isCorrectTurn
+		}
+		if (reqBody.username == "admin") {
+			response.unitTypes = Object.keys(unitTypes)
+			response.usersList = users
 		}
 		// console.log(`time: ${(new Date()).getTime()}, test1: ${turnChangeTime.test1}, test2: ${turnChangeTime.test2}`)
 
@@ -167,8 +176,11 @@ function handleTurnChange(reqBody, mapJSON) {
 		response = {
 			mapState: mapJSON,
 			nextTurnChange: turnChangeTime[reqBody.username],
-			isCorrectTurn: isCorrectTurn,
-			unitTypes: Object.keys(unitTypes)
+			isCorrectTurn: isCorrectTurn
+		}
+		if (reqBody.username == "admin") {
+			response.unitTypes = Object.keys(unitTypes)
+			response.usersList = users
 		}
 	}
 	return response

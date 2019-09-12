@@ -4,7 +4,7 @@
 			"id": 0,
 			"loc": [2807000, 4852600],
 			"type": "Carrier",
-			"size": 20000,
+			"user": "Blufor",
 			"properties": {
 				"Speed": 50,
 				"Range": 5,

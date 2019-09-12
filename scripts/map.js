@@ -17,37 +17,22 @@ import Dialog from 'ol-ext/control/Dialog.js'
 import Overlay from 'ol-ext/control/Overlay.js'
 
 
-function sizeToString(size) {
-	if (size >= 1000) {
-		return `${Math.round(size/1000)}k`
-	} else {
-		return `${size}`
-	}
-}
-
-function pointStyleGen(text) {
-	return new Style({
-		image: new CircleStyle({
-			radius: 20,
-			fill: new Fill({color: 'blue'}),
-			stroke: new Stroke({color: 'black', width: 1})
-		}),
-		text: new Text({
-			font: '13px sans-serif',
-			text: text,
-			fill: new Fill({color: 'white'})
-		})
+var pointStyle = new Style({
+	image: new CircleStyle({
+		radius: 20,
+		fill: new Fill({color: 'blue'}),
+		stroke: new Stroke({color: 'black', width: 1})
 	})
-}
+})
 
 class Unit {
-	constructor(loc, id, type, size, properties) {
+	constructor(loc, id, type, user, properties) {
 		this.feature = new Feature(new Point(loc))
 		this.feature.setId(id)
-		var style = pointStyleGen(sizeToString(size))
-		this.feature.setStyle(style)
+		this.feature.setStyle(pointStyle)
 		this.loc = loc
 		this.type = type
+		this.user = user
 		this.properties = properties
 		this.display()
 	}
@@ -56,6 +41,7 @@ class Unit {
 			id: this.feature.getId(),
 			loc: this.loc,
 			type: this.type,
+			user: this.user,
 			properties: this.properties
 		}
 	}
@@ -140,8 +126,9 @@ var TooltipControl = (function (Control) {
 		}
 		if (clickedElement.id == "createUnitButton") {
 			var unitType = document.getElementById("typeEntry").value
-			var size = document.getElementById("sizeEntry").value
-			createUnit(tooltipLocation, unitType, size)
+			var user = document.getElementById("userEntry").value
+			createUnit(tooltipLocation, unitType, user)
+			hideTooltip()
 		}
 	};
 
@@ -234,6 +221,7 @@ var units = []
 
 var unitTypes
 var tooltipLocation = null
+var usersList
 
 
 var url = "test.json";
@@ -266,7 +254,7 @@ map.render();
 
 updateZoom();
 
-function addUnit(loc, id, type, size, properties) {
+function addUnit(loc, id, type, user, properties) {
 	if (id == undefined) {
 		if (units) {
 			id = units[units.length-1].id+1
@@ -284,7 +272,7 @@ function addUnit(loc, id, type, size, properties) {
 		properties = defaultUnitProperties
 	}
 
-	var unit = new Unit(loc, id, type, size, properties)
+	var unit = new Unit(loc, id, type, user, properties)
 	vectorSource.addFeature(unit.feature)
 	units.push(unit)
 	updateZoom();
@@ -361,15 +349,14 @@ function displayTooltip(units, pixel) {
 			tooltipTable.innerHTML += `
 			<tr id=${unit.id} class="unitGroup">
 				<td>${unit.type}</td>
-				<td>${unit.properties.Size}</td>
 			</tr>
 			`
 		}
 	}
 }
 
-function createUnit(loc, type, size) {
-	changes.push({type: "add", loc: loc, unitType: type, size: size})
+function createUnit(loc, type, user) {
+	changes.push({type: "add", loc: loc, unitType: type, user: user})
 }
 
 function displayRightTooltip(pixel) {
@@ -393,8 +380,16 @@ function displayRightTooltip(pixel) {
 
 	str += `
 		</select></td>
+
 	</tr><tr>
-		<td>size:</td><td><input id="sizeEntry"/></td>
+		<td>type:</td><td><select id="userEntry">
+	`
+	for (var user of usersList) {
+		str += `<option value="${user}">${user}</option>`
+	}
+
+	str += `
+		</select></td>
 	</tr><tr>
 		<td/><td><button type="button" id="createUnitButton"/>Create</td>
 	</tr>
@@ -507,8 +502,13 @@ function handleResponse() {
 	if (this.readyState == 4 && this.status == 200) {
 		var responseJSON = JSON.parse(this.responseText)
 		var error = responseJSON.error
-		if (responseJSON.unitTypes) {
-			unitTypes = responseJSON.unitTypes
+		if (username == "admin"){
+			if (responseJSON.unitTypes) {
+				unitTypes = responseJSON.unitTypes
+			}
+			if (responseJSON.usersList) {
+				usersList = responseJSON.usersList
+			}
 		}
 		if (error) {
 			console.log(error)
@@ -522,7 +522,7 @@ function handleResponse() {
 			units = []
 			vectorSource.clear()
 			for (var rawUnit of mapJSON.units) {
-				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.size, rawUnit.properties)
+				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.user, rawUnit.properties)
 			}
 			if (username != "admin") {
 				nextTurnChange = responseJSON.nextTurnChange
