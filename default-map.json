@@ -1,16 +1,20 @@
 {
 	"units": [
 		{
-			"id": 0,
-			"loc": [2807000, 4852600],
-			"type": "Carrier",
-			"user": "Blufor",
+			"id":1,
+			"loc":[2808086,4853030],
+			"type":"Airborne Infantry Battalion",
+			"user":"Opfor",
 			"properties": {
-				"Speed": 50,
-				"Range": 5,
-				"Ammunition": 100,
-				"Vision": 10,
-				"Concealment": 1
+				"Abbreviation":"Para",
+				"Speed":"8",
+				"Range to refuel":"n/a",
+				"Turns to Deploy":"2",
+				"Concealment":"10",
+				"Vision":"15",
+				"Pieces per Unit":"500",
+				"Name of Piece":"Soldiers",
+				"Training level":"Shock"
 			}
 		}
 	]

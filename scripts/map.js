@@ -76,7 +76,7 @@ class UnitGroup {
 		if (this.units.length == 1) {
 			this.units[0].hide()
 			this.feature = new Feature(new Point(unit.visualLoc))
-			this.feature.setStyle(pointStyleGen("..."))
+			this.feature.setStyle(pointStyle)
 			vectorSource.addFeature(this.feature)
 		}
 		this.units.push(unit)
@@ -330,6 +330,9 @@ function displayTooltip(units, pixel) {
 		<tr class="tooltipHeader">
 			<th>${unit.type}</th>
 		</tr>
+		<tr>
+		<td style="font-style: italic">${unit.user}</td>
+		</tr>
 		`
 		for (var prop in unit.properties) {
 			tooltipTable.innerHTML += `
@@ -349,6 +352,7 @@ function displayTooltip(units, pixel) {
 			tooltipTable.innerHTML += `
 			<tr id=${unit.id} class="unitGroup">
 				<td>${unit.type}</td>
+				<td style="font-style: italic">${unit.user}</td>
 			</tr>
 			`
 		}
