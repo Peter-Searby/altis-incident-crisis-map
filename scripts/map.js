@@ -364,7 +364,7 @@ function displayTooltip(units, pixel) {
 }
 
 function createUnit(loc, type, size) {
-	changes.push({type: "add", type: type, size: size, loc: loc})
+	changes.push({type: "add", loc: loc, type: type, size: size})
 }
 
 function displayRightTooltip(pixel) {

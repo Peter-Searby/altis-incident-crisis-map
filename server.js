@@ -3,6 +3,7 @@ const fs = require('fs')
 const bodyParser = require('body-parser')
 const app = express()
 const port = 8000
+const csv = require('fast-csv')
 
 
 function userAttemptAdminError(command) {
@@ -12,6 +13,17 @@ function userAttemptAdminError(command) {
 function makeError(error) {
 	return {error: error}
 }
+
+function createUnit(id, loc, type, size) {
+	return {
+		id: id,
+		loc: loc,
+		type: type,
+		size: size,
+		properties: unitTypes[type]
+	}
+}
+
 
 function handleSync(reqBody, mapJSON) {
 	var changes = reqBody.changes
@@ -25,8 +37,8 @@ function handleSync(reqBody, mapJSON) {
 					} else {
 						id = 0
 					}
-					change.unit.id = id
-					mapJSON.units.push(change.unit)
+
+					mapJSON.units.push(createUnit(id, change.loc, change.type, change.size))
 
 					break;
 				case "move":
@@ -170,7 +182,24 @@ var logins = {
     [users[1]]: "user test2 password"
 }
 
+// File reading
+
 var settings = JSON.parse(fs.readFileSync('settings.json'))
+
+var unitTypes = new Object()
+
+function addUnitType(object) {
+	var type = object["Unit Type"]
+	unitTypes[type] = object
+	delete unitTypes[type]["Unit Type"]
+}
+
+csv
+  .parseFile('./stats.csv', {headers: true})
+  .on('error', error => console.error(error))
+  .on('data', row => addUnitType(row));
+
+
 
 var turnChangeTime = {
 	[users[0]]: d.getTime()+settings.turnTime,
