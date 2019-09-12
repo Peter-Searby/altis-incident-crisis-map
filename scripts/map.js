@@ -138,6 +138,11 @@ var TooltipControl = (function (Control) {
 				displayTooltip([getUnitById(clickedElement.id)], lastClick)
 			}
 		}
+		if (clickedElement.id == "createUnitButton") {
+			var unitType = document.getElementById("typeEntry").value
+			var size = document.getElementById("sizeEntry").value
+			createUnit(tooltipLocation, unitType, size)
+		}
 	};
 
 	return TooltipControl;
@@ -227,8 +232,8 @@ var units = []
 
 // Data stuff
 
-
-
+var unitTypes
+var tooltipLocation = null
 
 
 var url = "test.json";
@@ -364,7 +369,7 @@ function displayTooltip(units, pixel) {
 }
 
 function createUnit(loc, type, size) {
-	changes.push({type: "add", loc: loc, type: type, size: size})
+	changes.push({type: "add", loc: loc, unitType: type, size: size})
 }
 
 function displayRightTooltip(pixel) {
@@ -376,17 +381,17 @@ function displayRightTooltip(pixel) {
 	display:block;
 	`
 	var tooltipTable = document.getElementById("tooltipTable")
-	tooltipTable.innerHTML = `
+	 var str = `
 	<tr class="tooltipHeader">
 		<th>New Unit</th>
 	</tr><tr>
 		<td>type:</td><td><select id="typeEntry">
 	`
-	for (var type of typeList) {
-		tooltipTable.innerHTML += `<option value="${type}">${type}</option>`
+	for (var type of unitTypes) {
+		str += `<option value="${type}">${type}</option>`
 	}
 
-	tooltipTable.innerHTML += `
+	str += `
 		</select></td>
 	</tr><tr>
 		<td>size:</td><td><input id="sizeEntry"/></td>
@@ -394,6 +399,7 @@ function displayRightTooltip(pixel) {
 		<td/><td><button type="button" id="createUnitButton"/>Create</td>
 	</tr>
 	`
+	tooltipTable.innerHTML = str
 }
 
 function hideTooltip() {
@@ -483,6 +489,7 @@ function rightClick(e) {
 		hideTooltip()
 	} else {
 		if (username == "admin") {
+			tooltipLocation = loc
 			displayRightTooltip([e.clientX, e.clientY])
 		}
 	}
@@ -500,6 +507,9 @@ function handleResponse() {
 	if (this.readyState == 4 && this.status == 200) {
 		var responseJSON = JSON.parse(this.responseText)
 		var error = responseJSON.error
+		if (responseJSON.unitTypes) {
+			unitTypes = responseJSON.unitTypes
+		}
 		if (error) {
 			console.log(error)
 			alert(`Error: ${error}`)

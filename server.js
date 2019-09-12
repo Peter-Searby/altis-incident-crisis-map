@@ -38,7 +38,7 @@ function handleSync(reqBody, mapJSON) {
 						id = 0
 					}
 
-					mapJSON.units.push(createUnit(id, change.loc, change.type, change.size))
+					mapJSON.units.push(createUnit(id, change.loc, change.unitType, change.size))
 
 					break;
 				case "move":
@@ -65,7 +65,8 @@ function handleSync(reqBody, mapJSON) {
 		var mapRaw = JSON.stringify(mapJSON)
 		response = {
 			mapState: mapJSON,
-			turnTime: settings.turnTime
+			turnTime: settings.turnTime,
+			unitTypes: Object.keys(unitTypes)
 		}
 		if (reqBody.username != "admin") {
 			checkForMissingUsers()
@@ -154,7 +155,8 @@ function handleTurnChange(reqBody, mapJSON) {
 		response = {
 			mapState: mapJSON,
 			nextTurnChange: turnChangeTime[reqBody.username],
-			turnTime: isCorrectTurn
+			turnTime: isCorrectTurn,
+			unitTypes: Object.keys(unitTypes)
 		}
 		// console.log(`time: ${(new Date()).getTime()}, test1: ${turnChangeTime.test1}, test2: ${turnChangeTime.test2}`)
 
@@ -165,7 +167,8 @@ function handleTurnChange(reqBody, mapJSON) {
 		response = {
 			mapState: mapJSON,
 			nextTurnChange: turnChangeTime[reqBody.username],
-			isCorrectTurn: isCorrectTurn
+			isCorrectTurn: isCorrectTurn,
+			unitTypes: Object.keys(unitTypes)
 		}
 	}
 	return response
