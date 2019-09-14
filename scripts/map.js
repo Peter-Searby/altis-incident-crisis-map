@@ -1,6 +1,6 @@
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
-import {MultiPoint, Point, LineString, Circle} from 'ol/geom.js';
+import {MultiPoint, Point, LineString, Circle, Polygon} from 'ol/geom.js';
 import TileLayer from 'ol/layer/Tile.js';
 import OSM from 'ol/source/OSM.js';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
@@ -16,6 +16,7 @@ import Button from 'ol-ext/control/Button.js';
 import Dialog from 'ol-ext/control/Dialog.js'
 import Overlay from 'ol-ext/control/Overlay.js'
 import Notification from 'ol-ext/control/Notification.js'
+import convexHull from 'ol-ext/geom/ConvexHull.js'
 
 
 var pointStyle = new Style({
@@ -91,6 +92,7 @@ class UnitGroup {
 var vectorSource = new VectorSource()
 var movesSource = new VectorSource()
 var moveCircleSource = new VectorSource()
+var fogSource = new VectorSource()
 var lastClick = null
 var changes = []
 
@@ -158,6 +160,9 @@ var map = new Map({
 			source: movesSource
 		}),
 		new VectorLayer({
+			source:fogSource
+		}),
+		new VectorLayer({
 			source: vectorSource
 		})
 	],
@@ -197,9 +202,20 @@ var dialogPromptPassword = new Dialog()
 var notification = new Notification({})
 map.addControl(notification)
 
+// Fog
+var fogFeature = new Feature(new Polygon([[0,0]]))
+fogFeature.setStyle(new Style({fill: new Fill({color: [0, 0, 0, 0.8]})}))
+fogSource.addFeature(fogFeature)
 
 var nextTurnChange = null
 var isUsersTurn = false
+
+
+// Map bounds
+var mapMinX = 0
+var mapMinY = 0
+var mapMaxX = 5000000
+var mapMaxY = 6000000
 
 function getTurnManagerContent() {
 	var nextTurnString = "never"
@@ -266,6 +282,34 @@ map.render();
 
 updateZoom();
 
+function onUnitsChange() {
+	var pointsOfBounds = [
+		[mapMinX, mapMinY],
+		[mapMaxX, mapMinY],
+		[mapMaxX, mapMaxY],
+		[mapMinX, mapMaxY],
+		[mapMinX, mapMinY]
+	]
+	var points = []
+	for (var unit of units) {
+		if (unit.user == username) {
+			var r = parseInt(unit.properties["Vision"])
+			var p = unit.loc[0]/1000
+			var q = unit.loc[1]/1000
+			var pts = []
+			for (var x of [...Array(2*(r+2)).keys()].map(i => i - r-2 + p)) {
+				for (var y of [...Array(2*(r+1)).keys()].map(i => i - r-1 + q)) {
+					if (r ** 2 >= (x-p) ** 2 + (y-q) ** 2) {
+						pts.push([x*1000,y*1000])
+					}
+				}
+			}
+			points = points.concat(pts)
+		}
+	}
+	fogFeature.setGeometry(new Polygon([pointsOfBounds, [points[0], ...convexHull(points), points[0]]]))
+}
+
 function roundLocation(loc) {
 	return [Math.round(loc[0]/1000)*1000, Math.round(loc[1]/1000)*1000]
 }
@@ -293,10 +337,14 @@ function addUnit(loc, id, type, user, properties) {
 
 	if (originalUnit != null) {
 		unit = originalUnit
+		if (unit.loc != loc) {
+			onUnitsChange()
+		}
 		unit.loc = loc
 	} else {
 		unit = new Unit(loc, id, type, user, properties)
 		units.push(unit)
+		onUnitsChange()
 	}
 	vectorSource.addFeature(unit.feature)
 	updateZoom();
@@ -305,6 +353,7 @@ function addUnit(loc, id, type, user, properties) {
 
 function moveUnit(unit, loc) {
 	unit.loc = loc
+	onUnitsChange()
 	updateZoom();
 }
 
@@ -346,7 +395,7 @@ function getUnitsAt(pixel) {
 
 function displayMoveCircle(unit) {
 	if (unit.user == username) {
-		var rad = unit.properties["Speed"]*1000
+		var rad = parseInt(unit.properties["Speed"])*1000
 		var moveCircleFeature = new Feature(new Circle(unit.loc, rad))
 		moveCircleSource.addFeature(moveCircleFeature)
 	}
@@ -533,7 +582,7 @@ function rightClick(e) {
 			var inRange = Math.hypot(
 				loc[0] - selectedUnit.loc[0],
 				loc[1] - selectedUnit.loc[1]
-			) <= selectedUnit.properties["Speed"]*1000
+			) <= parseInt(selectedUnit.properties["Speed"])*1000
 
 			if (inRange && selectedUnit.user == username) {
 				allowed = true

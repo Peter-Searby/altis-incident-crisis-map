@@ -2,7 +2,7 @@
 	"units": [
 		{
 			"id":1,
-			"loc":[2808086,4853030],
+			"loc":[2808000,4853000],
 			"type":"Airborne Infantry Battalion",
 			"user":"Opfor",
 			"properties": {

@@ -2,10 +2,14 @@
 @import '../node_modules/ol-ext/control/Notification.css';
 
 
+body {
+	background-color: black
+}
+
 #minimap {
 	position: absolute;
-	top: 65%;
-	left: 5px;
+	bottom: 0;
+	left: 0;
 	width: 15%;
 	height: 30%;
 }
