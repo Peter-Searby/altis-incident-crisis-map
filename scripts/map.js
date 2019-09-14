@@ -35,6 +35,7 @@ class Unit {
 		this.user = user
 		this.properties = properties
 		this.display()
+		this. moveFeature = null
 	}
 	toRaw() {
 		return {
@@ -254,6 +255,10 @@ map.render();
 
 updateZoom();
 
+function roundLocation(loc) {
+	return [Math.round(loc[0]/1000)*1000, Math.round(loc[1]/1000)*1000]
+}
+
 function addUnit(loc, id, type, user, properties) {
 	if (id == undefined) {
 		if (units) {
@@ -262,8 +267,7 @@ function addUnit(loc, id, type, user, properties) {
 			id = 0
 		}
 	}
-	loc[0] = Math.round(loc[0]/1000)*1000
-	loc[1] = Math.round(loc[1]/1000)*1000
+	loc = roundLocation(loc)
 
 	if (type == undefined) {
 		type = defaultUnitType
@@ -285,11 +289,19 @@ function moveUnit(unit, loc) {
 }
 
 function moveCommand(unit, loc) {
-	var origLoc = unit.loc
-	movesSource.addFeature(new Feature(new LineString([
-		origLoc,
+	// TODO: fix features staying (since units are refreshed each second we can't store info in them)
+
+	if (unit.moveFeature) {
+		movesSource.removeFeature(unit.moveFeature)
+	}
+
+	var f = new Feature(new LineString([
+		unit.loc,
 		loc
-	])))
+	]))
+	movesSource.addFeature(f)
+
+	unit.moveFeature = f
 }
 
 function getUnitFromFeature(feature) {
@@ -477,15 +489,26 @@ function updateZoom() {
 
 function rightClick(e) {
 	e.preventDefault()
-	var loc = map.getCoordinateFromPixel([e.clientX, e.clientY])
+	var loc = roundLocation(map.getCoordinateFromPixel([e.clientX, e.clientY]))
 	if (selectedUnit) {
+		var allowed = false
 		if (username == "admin") {
 			moveUnit(selectedUnit, loc)
+			allowed = true
 		} else {
-			moveCommand(selectedUnit, loc)
+			var inRange = Math.hypot(
+				loc[0] - selectedUnit.loc[0],
+				loc[1] - selectedUnit.loc[1]
+			) <= selectedUnit.properties["Speed"]*1000
+			if (inRange && selectedUnit.user == username) {
+				allowed = true
+				moveCommand(selectedUnit, loc)
+			}
 		}
-		changes.push({type: "move", unitId: selectedUnit.id, newLocation: loc})
-		hideTooltip()
+		if (allowed) {
+			changes.push({type: "move", unitId: selectedUnit.id, newLocation: loc})
+			hideTooltip()
+		}
 	} else {
 		if (username == "admin") {
 			tooltipLocation = loc
@@ -582,6 +605,9 @@ function turnChange() {
 	xmlhttp.send(JSON.stringify(requestData));
 	syncNeedsRestarting = true
 	movesSource.clear()
+	for (var unit of units) {
+		unit.moveFeature = null
+	}
 }
 
 login()
