@@ -283,6 +283,9 @@ map.render();
 updateZoom();
 
 function onUnitsChange() {
+	if (username == "admin") {
+		return
+	}
 	var pointsOfBounds = [
 		[mapMinX, mapMinY],
 		[mapMaxX, mapMinY],
@@ -290,7 +293,7 @@ function onUnitsChange() {
 		[mapMinX, mapMaxY],
 		[mapMinX, mapMinY]
 	]
-	var points = []
+	var cutouts = []
 	for (var unit of units) {
 		if (unit.user == username) {
 			var r = parseInt(unit.properties["Vision"])
@@ -304,10 +307,11 @@ function onUnitsChange() {
 					}
 				}
 			}
-			points = points.concat(pts)
+			cutouts.push([...convexHull(pts), pts[0]])
 		}
 	}
-	fogFeature.setGeometry(new Polygon([pointsOfBounds, [points[0], ...convexHull(points), points[0]]]))
+
+	fogFeature.setGeometry(new Polygon([pointsOfBounds, ...cutouts]))
 }
 
 function roundLocation(loc) {
@@ -396,6 +400,7 @@ function getUnitsAt(pixel) {
 function displayMoveCircle(unit) {
 	if (unit.user == username) {
 		var rad = parseInt(unit.properties["Speed"])*1000
+		moveCircleSource.clear()
 		var moveCircleFeature = new Feature(new Circle(unit.loc, rad))
 		moveCircleSource.addFeature(moveCircleFeature)
 	}
@@ -509,6 +514,7 @@ map.on('click', function (event) {
 	if (unitsUnder.length != 0) {
 		displayTooltip(unitsUnder, event.pixel)
 		lastClick = event.pixel
+
 	} else {
 		hideTooltip();
 	}
