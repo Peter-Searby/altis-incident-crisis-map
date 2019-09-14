@@ -28,4 +28,4 @@ function init() {
 function draw() {
 	ctx.drawImage(img, 0, 0, height*0.3, height*0.34);
 }
-init();
+// init();

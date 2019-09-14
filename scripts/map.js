@@ -38,6 +38,7 @@ class Unit {
 		this.properties = properties
 		this.display()
 		this.moveFeature = null
+		this.seen = false
 	}
 	toRaw() {
 		return {
@@ -350,6 +351,7 @@ function addUnit(loc, id, type, user, properties) {
 		units.push(unit)
 		onUnitsChange()
 	}
+	unit.seen = true
 	vectorSource.addFeature(unit.feature)
 	updateZoom();
 	return unit
@@ -579,10 +581,12 @@ function updateZoom() {
 function rightClick(e) {
 	e.preventDefault()
 	var loc = roundLocation(map.getCoordinateFromPixel([e.clientX, e.clientY]))
-	if (selectedUnit) {
+	if (selectedUnit != null) {
+		var u = selectedUnit
 		var allowed = false
 		if (username == "admin") {
 			moveUnit(selectedUnit, loc)
+			hideTooltip()
 			allowed = true
 		} else {
 			var inRange = Math.hypot(
@@ -602,7 +606,7 @@ function rightClick(e) {
 			}
 		}
 		if (allowed) {
-			changes.push({type: "move", unitId: selectedUnit.id, newLocation: loc})
+			changes.push({type: "move", unitId: u.id, newLocation: loc})
 		}
 	} else {
 		if (username == "admin") {
@@ -643,8 +647,17 @@ function handleResponse() {
 		} else {
 			var mapJSON = responseJSON.mapState
 			vectorSource.clear()
+			for (var unit of units) {
+				unit.seen = false
+			}
 			for (var rawUnit of mapJSON.units) {
 				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.user, rawUnit.properties)
+			}
+
+			for (var unit of units) {
+				if (!unit.seen) {
+					units.splice(units.indexOf(unit), 1)
+				}
 			}
 			if (username != "admin") {
 				nextTurnChange = responseJSON.nextTurnChange

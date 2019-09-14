@@ -25,6 +25,22 @@ function createUnit(id, loc, type, user) {
 }
 
 function restrictMapView(mapJSON, user) {
+	var units = []
+
+	for (var unit of mapJSON.units) {
+		if (unit.user == user) {
+			units.push(unit)
+			var range = unit.properties["Vision"]*1000
+			for (var unit2 of mapJSON.units) {
+				var [unit1x, unit1y] = unit.loc
+				var [unit2x, unit2y] = unit2.loc
+				if (Math.hypot(unit1x-unit2x, unit1y-unit2y) <= range) {
+					units.push(unit2)
+				}
+			}
+		}
+	}
+	mapJSON.units = units
 	return mapJSON
 }
 
@@ -67,15 +83,16 @@ function handleSync(reqBody, mapJSON) {
 
 		var mapRaw = JSON.stringify(mapJSON)
 		response = {
-			mapState: restrictMapView(mapJSON, reqBody.username),
 			turnTime: settings.turnTime
 		}
 
 		if (reqBody.username == "admin") {
 			response.unitTypes = Object.keys(unitTypes)
 			response.usersList = users
+			response.mapState = mapJSON
 		} else {
 			checkForMissingUsers()
+			response.mapState = restrictMapView(mapJSON, reqBody.username)
 			response.nextTurnChange = turnChangeTime[reqBody.username]
 			response.isCorrectTurn = getNextTurnUser() == reqBody.username
 		}
@@ -158,13 +175,15 @@ function handleTurnChange(reqBody, mapJSON) {
 		var mapRaw = JSON.stringify(mapJSON)
 		checkForMissingUsers()
 		response = {
-			mapState: mapJSON,
 			nextTurnChange: turnChangeTime[reqBody.username],
 			turnTime: isCorrectTurn
 		}
 		if (reqBody.username == "admin") {
+			response.mapState =  mapJSON
 			response.unitTypes = Object.keys(unitTypes)
 			response.usersList = users
+		} else {
+			response.mapState = restrictMapView(mapJSON, reqBody.username)
 		}
 		// console.log(`time: ${(new Date()).getTime()}, test1: ${turnChangeTime.test1}, test2: ${turnChangeTime.test2}`)
 
