@@ -15,6 +15,7 @@ import {toLonLat} from 'ol/proj.js';
 import Button from 'ol-ext/control/Button.js';
 import Dialog from 'ol-ext/control/Dialog.js'
 import Overlay from 'ol-ext/control/Overlay.js'
+import Notification from 'ol-ext/control/Notification.js'
 
 
 var pointStyle = new Style({
@@ -191,6 +192,12 @@ graticule.setMap(map)
 var dialogPromptUser = new Dialog()
 var dialogPromptPassword = new Dialog()
 
+
+// Notification Control
+var notification = new Notification({})
+map.addControl(notification)
+
+
 var nextTurnChange = null
 var isUsersTurn = false
 
@@ -338,9 +345,11 @@ function getUnitsAt(pixel) {
 }
 
 function displayMoveCircle(unit) {
-	var rad = unit.properties["Speed"]*1000
-	var moveCircleFeature = new Feature(new Circle(unit.loc, rad))
-	moveCircleSource.addFeature(moveCircleFeature)
+	if (unit.user == username) {
+		var rad = unit.properties["Speed"]*1000
+		var moveCircleFeature = new Feature(new Circle(unit.loc, rad))
+		moveCircleSource.addFeature(moveCircleFeature)
+	}
 }
 
 
@@ -525,9 +534,16 @@ function rightClick(e) {
 				loc[0] - selectedUnit.loc[0],
 				loc[1] - selectedUnit.loc[1]
 			) <= selectedUnit.properties["Speed"]*1000
+
 			if (inRange && selectedUnit.user == username) {
 				allowed = true
 				moveCommand(selectedUnit, loc)
+			}
+			if (!inRange) {
+				notification.show(`Units can only travel as far as their speed (km) each turn`)
+			}
+			if (selectedUnit.user != username) {
+				notification.show(`This is not your unit`)
 			}
 		}
 		if (allowed) {
