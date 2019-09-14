@@ -1,6 +1,6 @@
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
-import {MultiPoint, Point, LineString} from 'ol/geom.js';
+import {MultiPoint, Point, LineString, Circle} from 'ol/geom.js';
 import TileLayer from 'ol/layer/Tile.js';
 import OSM from 'ol/source/OSM.js';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
@@ -89,6 +89,7 @@ class UnitGroup {
 
 var vectorSource = new VectorSource()
 var movesSource = new VectorSource()
+var moveCircleSource = new VectorSource()
 var lastClick = null
 var changes = []
 
@@ -148,6 +149,9 @@ var map = new Map({
 			source: new OSM({
 				url: 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png'
 			})
+		}),
+		new VectorLayer({
+			source: moveCircleSource
 		}),
 		new VectorLayer({
 			source: movesSource
@@ -333,6 +337,12 @@ function getUnitsAt(pixel) {
 	return foundUnits
 }
 
+function displayMoveCircle(unit) {
+	var rad = unit.properties["Speed"]*1000
+	var moveCircleFeature = new Feature(new Circle(unit.loc, rad))
+	moveCircleSource.addFeature(moveCircleFeature)
+}
+
 
 function displayTooltip(units, pixel) {
 	tooltipElement.style.cssText = `
@@ -345,7 +355,10 @@ function displayTooltip(units, pixel) {
 	var tooltipTable = document.getElementById("tooltipTable")
 	if (units.length == 1) {
 		var unit = units[0]
-		selectedUnit = unit
+		if (selectedUnit != unit) {
+			displayMoveCircle(unit)
+			selectedUnit = unit
+		}
 		tooltipTable.innerHTML = `
 		<tr class="tooltipHeader">
 			<th>${unit.type}</th>
@@ -424,6 +437,13 @@ function displayRightTooltip(pixel) {
 function hideTooltip() {
 	tooltipElement.style.cssText = 'display:none;'
 	selectedUnit = null
+	moveCircleSource.clear()
+}
+
+function updateTooltip() {
+	if (selectedUnit != null) {
+		 displayTooltip([selectedUnit], map.getPixelFromCoordinate(selectedUnit.loc))
+	}
 }
 
 map.on('click', function (event) {
@@ -436,12 +456,9 @@ map.on('click', function (event) {
 	}
 })
 
-map.on('movestart', function (event) {
-	hideTooltip();
-})
-
 map.on('moveend', function (event) {
 	updateZoom();
+	updateTooltip()
 })
 
 function updateZoom() {
@@ -515,7 +532,6 @@ function rightClick(e) {
 		}
 		if (allowed) {
 			changes.push({type: "move", unitId: selectedUnit.id, newLocation: loc})
-			hideTooltip()
 		}
 	} else {
 		if (username == "admin") {
@@ -613,6 +629,8 @@ function turnChange() {
 	xmlhttp.send(JSON.stringify(requestData));
 	syncNeedsRestarting = true
 	movesSource.clear()
+	moveCircleSource.clear()
+	hideTooltip()
 	for (var unit of units) {
 		unit.moveFeature = null
 	}
