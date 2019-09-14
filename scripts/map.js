@@ -35,7 +35,7 @@ class Unit {
 		this.user = user
 		this.properties = properties
 		this.display()
-		this. moveFeature = null
+		this.moveFeature = null
 	}
 	toRaw() {
 		return {
@@ -260,6 +260,9 @@ function roundLocation(loc) {
 }
 
 function addUnit(loc, id, type, user, properties) {
+
+	var originalUnit = getUnitById(id)
+
 	if (id == undefined) {
 		if (units) {
 			id = units[units.length-1].id+1
@@ -275,10 +278,16 @@ function addUnit(loc, id, type, user, properties) {
 	if (properties == undefined) {
 		properties = defaultUnitProperties
 	}
+	var unit
 
-	var unit = new Unit(loc, id, type, user, properties)
+	if (originalUnit != null) {
+		unit = originalUnit
+		unit.loc = loc
+	} else {
+		unit = new Unit(loc, id, type, user, properties)
+		units.push(unit)
+	}
 	vectorSource.addFeature(unit.feature)
-	units.push(unit)
 	updateZoom();
 	return unit
 }
@@ -289,7 +298,6 @@ function moveUnit(unit, loc) {
 }
 
 function moveCommand(unit, loc) {
-	// TODO: fix features staying (since units are refreshed each second we can't store info in them)
 
 	if (unit.moveFeature) {
 		movesSource.removeFeature(unit.moveFeature)
@@ -523,6 +531,7 @@ function getUnitById(id) {
 			return unit
 		}
 	}
+	return null
 }
 
 function handleResponse() {
@@ -546,7 +555,6 @@ function handleResponse() {
 			}
 		} else {
 			var mapJSON = responseJSON.mapState
-			units = []
 			vectorSource.clear()
 			for (var rawUnit of mapJSON.units) {
 				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.user, rawUnit.properties)

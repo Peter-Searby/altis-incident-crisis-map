@@ -129,7 +129,6 @@ function getNextTurnUser() {
 }
 
 function handleTurnChange(reqBody, mapJSON) {
-	// console.log("Starting turn change")
 	var nextUser = getNextTurnUser()
 	var isCorrectTurn = reqBody.username == nextUser
 	if (isCorrectTurn) {
