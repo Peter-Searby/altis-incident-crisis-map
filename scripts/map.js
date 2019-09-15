@@ -39,8 +39,8 @@ var url;
 
 var turnTimer, repeatSync, turnTimeUpdater;
 
-var username
-var password
+var username;
+var password;
 
 var TooltipControl;
 
@@ -59,6 +59,13 @@ var pointStyle = new Style({
 		radius: 20,
 		fill: new Fill({color: 'blue'}),
 		stroke: new Stroke({color: 'black', width: 1})
+	})
+});
+
+var graticuleStyle = new Style({
+	stroke: new Stroke({
+		width: 0.3,
+		color: ['black']
 	})
 });
 
@@ -223,12 +230,7 @@ map = new Map({
 
 
 graticule = new Graticule({
-	style: new Style({
-		stroke: new Stroke({
-			width: 0.3,
-			color: ['black']
-		})
-	}),
+	style: graticuleStyle,
 	borderWidth: 1,
 	step: 1000,
 	projection: 'EPSG:3857',
@@ -238,28 +240,28 @@ graticule.setMap(map)
 
 
 // Prompt dialog
-dialogPromptUser = new Dialog()
-dialogPromptPassword = new Dialog()
+dialogPromptUser = new Dialog();
+dialogPromptPassword = new Dialog();
 
 
 // Notification Control
-notification = new Notification({})
-map.addControl(notification)
+notification = new Notification();
+map.addControl(notification);
 
 // Fog
-fogFeature = new Feature(new Polygon([[0,0]]))
-fogFeature.setStyle(new Style({fill: new Fill({color: [0, 0, 0, 0.8]})}))
-fogSource.addFeature(fogFeature)
+fogFeature = new Feature(new Polygon([[0,0]]));
+fogFeature.setStyle(new Style({fill: new Fill({color: [0, 0, 0, 0.8]})}));
+fogSource.addFeature(fogFeature);
 
-nextTurnChange = null
-isUsersTurn = false
+nextTurnChange = null;
+isUsersTurn = false;
 
 
 // Map bounds
-mapMinX = 0
-mapMinY = 0
-mapMaxX = 5000000
-mapMaxY = 6000000
+mapMinX = 0;
+mapMinY = 0;
+mapMaxX = 5000000;
+mapMaxY = 6000000;
 
 
 lastClick = null;
