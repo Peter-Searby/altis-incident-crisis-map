@@ -334,7 +334,7 @@ function onUnitsChange() {
 			var lastMerge = -1
 			for (var j in cutoutsMerged) {
 				if (cutoutsMerged[j] != null) {
-					if (cutouts[i].overlaps(cutoutsMerged[j]) || cutouts[i].equals(cutoutsMerged[j])) {
+					if (!cutouts[i].intersection(cutoutsMerged[j]).isEmpty()) {
 						if (lastMerge != -1) {
 							cutoutsMerged[lastMerge] = cutoutsMerged[j].union(cutoutsMerged[lastMerge].union(cutouts[i]))
 							cutoutsMerged[j] = null
