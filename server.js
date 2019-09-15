@@ -210,9 +210,9 @@ var d = new Date()
 var users = ["Blufor", "Opfor"]
 
 var logins = {
-    "admin": "hopefully this doesnt need to be secure",
-    [users[0]]: "user test password",
-    [users[1]]: "user test2 password"
+    "admin": "",
+    [users[0]]: "",
+    [users[1]]: ""
 }
 
 // File reading

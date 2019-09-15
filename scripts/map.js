@@ -8,6 +8,7 @@ import Text from 'ol/style/Text';
 import Feature from 'ol/Feature';
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
+import WKT from 'ol/format/WKT'
 import {defaults as defaultControls, Control} from 'ol/control.js';
 import {defaults as defaultInteractions} from 'ol/interaction.js';
 import Graticule from 'ol-ext/control/Graticule.js';
@@ -17,6 +18,9 @@ import Dialog from 'ol-ext/control/Dialog.js'
 import Overlay from 'ol-ext/control/Overlay.js'
 import Notification from 'ol-ext/control/Notification.js'
 import convexHull from 'ol-ext/geom/ConvexHull.js'
+const jsts = require('jsts')
+
+
 
 
 var pointStyle = new Style({
@@ -308,11 +312,60 @@ function onUnitsChange() {
 					}
 				}
 			}
-			cutouts.push([...convexHull(pts), pts[0]])
+			var str = "POLYGON (("
+			var cH = convexHull(pts)
+
+			for (var coord of cH) {
+				str+=`${coord[0]} ${coord[1]}, `
+			}
+
+			str+= `${pts[0][0]} ${pts[0][1]}))`
+			cutouts.push(str)
 		}
 	}
 
-	fogFeature.setGeometry(new Polygon([pointsOfBounds, ...cutouts]))
+	var wkt = new WKT()
+
+	var reader = new jsts.io.WKTReader()
+	var writer = new jsts.io.WKTWriter()
+	var cutoutsMerged = []
+	for (var i in cutouts) {
+		cutouts[i] = reader.read(cutouts[i])
+		if (cutoutsMerged.length == 0) {
+			cutoutsMerged.push(cutouts[i])
+		} else {
+			var lastMerge = -1
+			for (var j in cutoutsMerged) {
+				if (cutoutsMerged[j] != null) {
+					if (cutouts[i].overlaps(cutoutsMerged[j]) || cutouts[i].equals(cutoutsMerged[j])) {
+						if (lastMerge != -1) {
+							cutoutsMerged[lastMerge] = cutoutsMerged[j].union(cutoutsMerged[lastMerge].union(cutouts[i]))
+							cutoutsMerged[j] = null
+						} else {
+							cutoutsMerged[j] = cutoutsMerged[j].union(cutouts[i])
+							lastMerge = j
+						}
+					}
+				}
+			}
+			if (lastMerge == -1) {
+				cutoutsMerged.push(cutouts[i])
+			}
+		}
+	}
+
+
+	for (var i in cutoutsMerged) {
+		if (cutoutsMerged[i] != null) {
+			cutoutsMerged[i] = writer.write(cutoutsMerged[i])
+			cutoutsMerged[i] = wkt.readGeometry(cutoutsMerged[i])
+			cutoutsMerged[i] = cutoutsMerged[i].getCoordinates()[0]
+		} else {
+			cutoutsMerged[i] = []
+		}
+	}
+
+	fogFeature.setGeometry(new Polygon([pointsOfBounds, ...cutoutsMerged]))
 }
 
 function roundLocation(loc) {
@@ -441,6 +494,9 @@ function displayTooltip(units, pixel) {
 			`
 		}
 	} else {
+		if (selectedUnit != null) {
+			selectedUnit = null
+		}
 		tooltipTable.innerHTML = `
 		<tr class="tooltipHeader">
 			<th>Unit Group</th>
