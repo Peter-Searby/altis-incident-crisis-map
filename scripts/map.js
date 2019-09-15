@@ -288,9 +288,6 @@ map.render();
 updateZoom();
 
 function onUnitsChange() {
-	if (username == "admin") {
-		return
-	}
 	var pointsOfBounds = [
 		[mapMinX, mapMinY],
 		[mapMaxX, mapMinY],
@@ -396,13 +393,11 @@ function addUnit(loc, id, type, user, properties) {
 	if (originalUnit != null) {
 		unit = originalUnit
 		if (unit.loc != loc) {
-			onUnitsChange()
 		}
 		unit.loc = loc
 	} else {
 		unit = new Unit(loc, id, type, user, properties)
 		units.push(unit)
-		onUnitsChange()
 	}
 	unit.seen = true
 	vectorSource.addFeature(unit.feature)
@@ -412,7 +407,6 @@ function addUnit(loc, id, type, user, properties) {
 
 function moveUnit(unit, loc) {
 	unit.loc = loc
-	onUnitsChange()
 	updateZoom();
 }
 
@@ -727,6 +721,9 @@ function handleResponse() {
 					syncNeedsRestarting = false
 					repeatSync = setInterval(sync, 1000)
 					// console.log(`restarting sync. ${timeToChange}`)
+				}
+				if (responseJSON.anyChanges) {
+					onUnitsChange()
 				}
 			}
 		}

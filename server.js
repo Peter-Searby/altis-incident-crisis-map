@@ -50,6 +50,7 @@ function handleSync(reqBody, mapJSON) {
 		for (var change of changes) {
 			switch (change.type) {
 				case "add":
+					changeOccured()
 					var id
 					if (mapJSON.units) {
 						id = mapJSON.units[mapJSON.units.length-1].id+1
@@ -61,6 +62,7 @@ function handleSync(reqBody, mapJSON) {
 
 					break;
 				case "move":
+					changeOccured()
 					var id = change.unitId;
 					var newLocation = change.newLocation;
 					move: {
@@ -83,7 +85,8 @@ function handleSync(reqBody, mapJSON) {
 
 		var mapRaw = JSON.stringify(mapJSON)
 		response = {
-			turnTime: settings.turnTime
+			turnTime: settings.turnTime,
+			anyChanges: anyChanges[reqBody.username]
 		}
 
 		if (reqBody.username == "admin") {
@@ -155,6 +158,7 @@ function handleTurnChange(reqBody, mapJSON) {
 		for (var change of changes) {
 			switch (change.type) {
 				case "move":
+					changeOccured()
 					var id = change.unitId;
 					var newLocation = change.newLocation;
 					move: {
@@ -176,7 +180,8 @@ function handleTurnChange(reqBody, mapJSON) {
 		checkForMissingUsers()
 		response = {
 			nextTurnChange: turnChangeTime[reqBody.username],
-			turnTime: isCorrectTurn
+			turnTime: isCorrectTurn,
+			anyChanges: anyChanges[reqBody.username]
 		}
 		if (reqBody.username == "admin") {
 			response.mapState =  mapJSON
@@ -194,7 +199,8 @@ function handleTurnChange(reqBody, mapJSON) {
 		response = {
 			mapState: mapJSON,
 			nextTurnChange: turnChangeTime[reqBody.username],
-			isCorrectTurn: isCorrectTurn
+			isCorrectTurn: isCorrectTurn,
+			anyChanges: anyChanges[reqBody.username]
 		}
 		if (reqBody.username == "admin") {
 			response.unitTypes = Object.keys(unitTypes)
@@ -213,6 +219,18 @@ var logins = {
     "admin": "",
     [users[0]]: "",
     [users[1]]: ""
+}
+
+var anyChanges = {
+	"admin": true,
+	[users[0]]: true,
+	[users[1]]: true,
+}
+
+function changeOccured() {
+	for (var key in anyChanges) {
+		anyChanges[key] = true
+	}
 }
 
 // File reading
@@ -251,7 +269,8 @@ app.use(bodyParser.json())
 app.post('/server.js', function (req, res, next) {
 	var rawdata = fs.readFileSync('data/map.json')
 	var mapJSON = JSON.parse(fs.readFileSync('data/map.json'))
-	if (logins[req.body.username] == req.body.password) {
+	var username = req.body.username
+	if (logins[username] == req.body.password) {
 		var response
 		if (req.body.requestType == "sync") {
 			response = handleSync(req.body, mapJSON)
@@ -262,10 +281,11 @@ app.post('/server.js', function (req, res, next) {
 			response = makeError("Invalid request made")
 		}
 	} else  {
-		console.log(`Incorrect password for user, ${req.body.username}, entered`)
+		console.log(`Incorrect password for user, ${username}, entered`)
 		response = makeError("Wrong password")
 	}
 	res.send(JSON.stringify(response))
+	anyChanges[username] = false
 	next()
 })
 app.listen(port)
