@@ -8,20 +8,51 @@ import Text from 'ol/style/Text';
 import Feature from 'ol/Feature';
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
-import WKT from 'ol/format/WKT'
+import WKT from 'ol/format/WKT';
 import {defaults as defaultControls, Control} from 'ol/control.js';
 import {defaults as defaultInteractions} from 'ol/interaction.js';
 import Graticule from 'ol-ext/control/Graticule.js';
 import {toLonLat} from 'ol/proj.js';
 import Button from 'ol-ext/control/Button.js';
-import Dialog from 'ol-ext/control/Dialog.js'
-import Overlay from 'ol-ext/control/Overlay.js'
-import Notification from 'ol-ext/control/Notification.js'
-import convexHull from 'ol-ext/geom/ConvexHull.js'
-const jsts = require('jsts')
+import Dialog from 'ol-ext/control/Dialog.js';
+import Overlay from 'ol-ext/control/Overlay.js';
+import Notification from 'ol-ext/control/Notification.js';
+import convexHull from 'ol-ext/geom/ConvexHull.js';
+const jsts = require('jsts');
 
 
+// OpenLayers
+var map;
+var vectorSource, movesSource, moveCircleSource, fogSource;
+var turnManager;
+var tooltipElement, graticule;
+var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton;
+var fogFeature;
 
+var selectedUnit;
+
+var nextTurnChange, isUsersTurn, lastClick, changes, started, syncNeedsRestarting;
+var mapMinX, mapMinY, mapMaxX, mapMaxY;
+var units, unitTypes, usersList;
+var tooltipLocation;
+var url;
+
+var turnTimer, repeatSync, turnTimeUpdater;
+
+var username
+var password
+
+var TooltipControl;
+
+var width = window.innerWidth
+|| document.documentElement.clientWidth
+|| document.body.clientWidth;
+
+var height = window.innerHeight
+|| document.documentElement.clientHeight
+|| document.body.clientHeight;
+
+// Styles
 
 var pointStyle = new Style({
 	image: new CircleStyle({
@@ -29,21 +60,25 @@ var pointStyle = new Style({
 		fill: new Fill({color: 'blue'}),
 		stroke: new Stroke({color: 'black', width: 1})
 	})
-})
+});
+
+
+// Classes
 
 class Unit {
 	constructor(loc, id, type, user, properties) {
-		this.feature = new Feature(new Point(loc))
-		this.feature.setId(id)
-		this.feature.setStyle(pointStyle)
-		this.loc = loc
-		this.type = type
-		this.user = user
-		this.properties = properties
-		this.display()
-		this.moveFeature = null
-		this.seen = false
+		this.feature = new Feature(new Point(loc));
+		this.feature.setId(id);
+		this.feature.setStyle(pointStyle);
+		this.loc = loc;
+		this.type = type;
+		this.user = user;
+		this.properties = properties;
+		this.display();
+		this.moveFeature = null;
+		this.seen = false;
 	}
+
 	toRaw() {
 		return {
 			id: this.feature.getId(),
@@ -51,64 +86,59 @@ class Unit {
 			type: this.type,
 			user: this.user,
 			properties: this.properties
-		}
+		};
 	}
+
 	get id() {
-		return this.feature.getId()
+		return this.feature.getId();
 	}
+
 	get visualLoc() {
-		return this.feature.getGeometry().getCoordinates()
+		return this.feature.getGeometry().getCoordinates();
 	}
+
 	updateZoom(gridWidth){
 		this.feature.getGeometry().setCoordinates([
 			Math.round(this.loc[0]/gridWidth)*gridWidth,
 			Math.round(this.loc[1]/gridWidth)*gridWidth]
-		)
+		);
 	}
+
 	hide() {
 		if (vectorSource.hasFeature(this.feature)){
-			vectorSource.removeFeature(this.feature)
+			vectorSource.removeFeature(this.feature);
 		}
 	}
+
 	display() {
-		vectorSource.addFeature(this.feature)
+		vectorSource.addFeature(this.feature);
 	}
 }
 
 class UnitGroup {
 	constructor(unit) {
-		this.units = [unit]
-		this.feature = unit.feature
+		this.units = [unit];
+		this.feature = unit.feature;
 	}
+
 	addUnit(unit) {
 		if (this.units.length == 1) {
-			this.units[0].hide()
-			this.feature = new Feature(new Point(unit.visualLoc))
-			this.feature.setStyle(pointStyle)
-			vectorSource.addFeature(this.feature)
+			this.units[0].hide();
+			this.feature = new Feature(new Point(unit.visualLoc));
+			this.feature.setStyle(pointStyle);
+			vectorSource.addFeature(this.feature);
 		}
-		this.units.push(unit)
-		unit.hide()
+
+		this.units.push(unit);
+		unit.hide();
 	}
 }
-
-
-
-var vectorSource = new VectorSource()
-var movesSource = new VectorSource()
-var moveCircleSource = new VectorSource()
-var fogSource = new VectorSource()
-var lastClick = null
-var changes = []
-
-var tooltipElement = document.getElementById('tooltip');
 
 var TooltipControl = (function (Control) {
 	function TooltipControl(opt_options) {
 		var options = opt_options || {};
 
 		tooltipElement.className = 'tooltip ol-unselectable ol-control';
-
 
 		Control.call(this, {
 			element: tooltipElement,
@@ -118,37 +148,47 @@ var TooltipControl = (function (Control) {
 		tooltipElement.addEventListener('click', this.receiveClick.bind(this), false);
 	}
 
-	if ( Control ) TooltipControl.__proto__ = Control;
-	TooltipControl.prototype = Object.create( Control && Control.prototype );
+	if (Control) TooltipControl.__proto__ = Control;
+
+	TooltipControl.prototype = Object.create(Control && Control.prototype);
 	TooltipControl.prototype.constructor = TooltipControl;
 
-	TooltipControl.prototype.receiveClick = function receiveClick (event) {
-		var clickedElement = event.target
+	TooltipControl.prototype.receiveClick = function receiveClick(event) {
+		var clickedElement = event.target;
+
 		if (clickedElement.tagName == "TD") {
-			var row = clickedElement.parentNode
+			var row = clickedElement.parentNode;
+
 			if (row.classList.contains("unitGroup")) {
-				displayTooltip([getUnitById(row.id)], lastClick)
+				displayTooltip([getUnitById(row.id)], lastClick);
 			}
 		} else if (clickedElement.tagName == "TR") {
 			if (clickedElement.classList.contains("unitGroup")) {
-				displayTooltip([getUnitById(clickedElement.id)], lastClick)
+				displayTooltip([getUnitById(clickedElement.id)], lastClick);
 			}
 		}
+
 		if (clickedElement.id == "createUnitButton") {
-			var unitType = document.getElementById("typeEntry").value
-			var user = document.getElementById("userEntry").value
-			createUnit(tooltipLocation, unitType, user)
-			hideTooltip()
+			var unitType = document.getElementById("typeEntry").value;
+			var user = document.getElementById("userEntry").value;
+
+			createUnit(tooltipLocation, unitType, user);
+			hideTooltip();
 		}
 	};
 
 	return TooltipControl;
-  }(Control));
+}(Control));
 
 
+// Map setup
 
+vectorSource = new VectorSource();
+movesSource = new VectorSource();
+moveCircleSource = new VectorSource();
+fogSource = new VectorSource();
 
-var map = new Map({
+map = new Map({
 	controls: defaultControls().extend([
 		new TooltipControl()
     ]),
@@ -182,8 +222,7 @@ var map = new Map({
 });
 
 
-
-var graticule = new Graticule({
+graticule = new Graticule({
 	style: new Style({
 		stroke: new Stroke({
 			width: 0.3,
@@ -199,90 +238,79 @@ graticule.setMap(map)
 
 
 // Prompt dialog
-var dialogPromptUser = new Dialog()
-var dialogPromptPassword = new Dialog()
+dialogPromptUser = new Dialog()
+dialogPromptPassword = new Dialog()
 
 
 // Notification Control
-var notification = new Notification({})
+notification = new Notification({})
 map.addControl(notification)
 
 // Fog
-var fogFeature = new Feature(new Polygon([[0,0]]))
+fogFeature = new Feature(new Polygon([[0,0]]))
 fogFeature.setStyle(new Style({fill: new Fill({color: [0, 0, 0, 0.8]})}))
 fogSource.addFeature(fogFeature)
 
-var nextTurnChange = null
-var isUsersTurn = false
+nextTurnChange = null
+isUsersTurn = false
 
 
 // Map bounds
-var mapMinX = 0
-var mapMinY = 0
-var mapMaxX = 5000000
-var mapMaxY = 6000000
+mapMinX = 0
+mapMinY = 0
+mapMaxX = 5000000
+mapMaxY = 6000000
+
+
+lastClick = null;
+changes = [];
+
+tooltipElement = document.getElementById('tooltip');
+
 
 function getTurnManagerContent() {
-	var nextTurnString = "never"
+	var nextTurnString = "never";
+
 	if (nextTurnChange != null) {
-		nextTurnString = `${Math.round((nextTurnChange-(new Date()).getTime())/1000)}s`
+		nextTurnString = `${Math.round((nextTurnChange-(new Date()).getTime())/1000)}s`;
 	}
-	var disabledString = ""
+
+	var disabledString = "";
+
 	if (!isUsersTurn) {
-		disabledString = " disabled"
+		disabledString = " disabled";
 	}
-	return `Next turn: ${nextTurnString}<br/><button id="endTurnButton" type='button'${disabledString}>End Turn</button>`
+
+	return `Next turn: ${nextTurnString}<br/>
+		<button id="endTurnButton" type='button'${disabledString}>
+			End Turn
+		</button>`;
 }
 
 // Turn change overlay
-var turnManager = new Overlay({
+turnManager = new Overlay({
 	closeBox: false,
 	className: "turn-change overlay",
 	content: getTurnManagerContent()
-})
+});
 
-map.addControl(turnManager)
+map.addControl(turnManager);
 
-var turnTimer
-
-var turnTimeButton
-
-
-var units = []
 
 // Data stuff
 
-var unitTypes
-var tooltipLocation = null
-var usersList
+units = [];
 
+url = "test.json";
+started = false;
 
-var url = "test.json";
-var started = false;
+tooltipLocation = null;
+selectedUnit = null;
 
-var selectedUnit = null
-var username
-var password
+document.getElementById('map').oncontextmenu = rightClick;
 
-var width = window.innerWidth
-|| document.documentElement.clientWidth
-|| document.body.clientWidth;
-
-var height = window.innerHeight
-|| document.documentElement.clientHeight
-|| document.body.clientHeight;
-
-document.getElementById('map').oncontextmenu = rightClick
-
-map.setSize([width, height*0.98])
-
-
-map.on('postcompose', function(event) {
-
-	map.render()
-});
-
-
+map.setSize([width, height*0.98]);
+map.on('postcompose', function(event) {map.render()});
 map.render();
 
 updateZoom();
@@ -294,164 +322,166 @@ function onUnitsChange() {
 		[mapMaxX, mapMaxY],
 		[mapMinX, mapMaxY],
 		[mapMinX, mapMinY]
-	]
-	var cutouts = []
+	];
+	var cutouts = [];
 	for (var unit of units) {
 		if (unit.user == username) {
-			var r = parseInt(unit.properties["Vision"])
-			var p = unit.loc[0]/1000
-			var q = unit.loc[1]/1000
-			var pts = []
+			var r = parseInt(unit.properties["Vision"]);
+			var p = unit.loc[0] / 1000;
+			var q = unit.loc[1] / 1000;
+
+			var pts = [];
 			for (var x of [...Array(2*(r+2)).keys()].map(i => i - r-2 + p)) {
 				for (var y of [...Array(2*(r+1)).keys()].map(i => i - r-1 + q)) {
 					if (r ** 2 >= (x-p) ** 2 + (y-q) ** 2) {
-						pts.push([x*1000,y*1000])
+						pts.push([x*1000,y*1000]);
 					}
 				}
 			}
-			var str = "POLYGON (("
-			var cH = convexHull(pts)
+			var cH = convexHull(pts);
 
+			var str = "POLYGON ((";
 			for (var coord of cH) {
-				str+=`${coord[0]} ${coord[1]}, `
+				str+=`${coord[0]} ${coord[1]}, `;
 			}
+			str+= `${pts[0][0]} ${pts[0][1]}))`;
 
-			str+= `${pts[0][0]} ${pts[0][1]}))`
-			cutouts.push(str)
+			cutouts.push(str);
 		}
 	}
 
-	var wkt = new WKT()
+	var wkt = new WKT();
 
-	var reader = new jsts.io.WKTReader()
-	var writer = new jsts.io.WKTWriter()
-	var cutoutsMerged = []
+	var reader = new jsts.io.WKTReader();
+	var writer = new jsts.io.WKTWriter();
+
+	var cutoutsMerged = [];
 	for (var i in cutouts) {
-		cutouts[i] = reader.read(cutouts[i])
+		cutouts[i] = reader.read(cutouts[i]);
+
 		if (cutoutsMerged.length == 0) {
-			cutoutsMerged.push(cutouts[i])
+			cutoutsMerged.push(cutouts[i]);
 		} else {
-			var lastMerge = -1
+			var lastMerge = -1;
+
 			for (var j in cutoutsMerged) {
 				if (cutoutsMerged[j] != null) {
 					if (!cutouts[i].intersection(cutoutsMerged[j]).isEmpty()) {
 						if (lastMerge != -1) {
-							cutoutsMerged[lastMerge] = cutoutsMerged[j].union(cutoutsMerged[lastMerge].union(cutouts[i]))
-							cutoutsMerged[j] = null
+							cutoutsMerged[lastMerge] = cutoutsMerged[j].union(cutoutsMerged[lastMerge].union(cutouts[i]));
+							cutoutsMerged[j] = null;
 						} else {
-							cutoutsMerged[j] = cutoutsMerged[j].union(cutouts[i])
-							lastMerge = j
+							cutoutsMerged[j] = cutoutsMerged[j].union(cutouts[i]);
+							lastMerge = j;
 						}
 					}
 				}
 			}
+
 			if (lastMerge == -1) {
-				cutoutsMerged.push(cutouts[i])
+				cutoutsMerged.push(cutouts[i]);
 			}
 		}
 	}
 
-
 	for (var i in cutoutsMerged) {
 		if (cutoutsMerged[i] != null) {
-			cutoutsMerged[i] = writer.write(cutoutsMerged[i])
-			cutoutsMerged[i] = wkt.readGeometry(cutoutsMerged[i])
-			cutoutsMerged[i] = cutoutsMerged[i].getCoordinates()[0]
+			cutoutsMerged[i] = writer.write(cutoutsMerged[i]);
+			cutoutsMerged[i] = wkt.readGeometry(cutoutsMerged[i]);
+			cutoutsMerged[i] = cutoutsMerged[i].getCoordinates()[0];
 		} else {
-			cutoutsMerged[i] = []
+			cutoutsMerged[i] = [];
 		}
 	}
 
-	fogFeature.setGeometry(new Polygon([pointsOfBounds, ...cutoutsMerged]))
+	fogFeature.setGeometry(new Polygon([pointsOfBounds, ...cutoutsMerged]));
 }
 
 function roundLocation(loc) {
-	return [Math.round(loc[0]/1000)*1000, Math.round(loc[1]/1000)*1000]
+	return [Math.round(loc[0]/1000)*1000, Math.round(loc[1]/1000)*1000];
 }
 
 function addUnit(loc, id, type, user, properties) {
-
-	var originalUnit = getUnitById(id)
+	var unit;
+	var originalUnit = getUnitById(id);
 
 	if (id == undefined) {
 		if (units) {
-			id = units[units.length-1].id+1
+			id = units[units.length-1].id+1;
 		} else {
-			id = 0
+			id = 0;
 		}
 	}
-	loc = roundLocation(loc)
+
+	loc = roundLocation(loc);
 
 	if (type == undefined) {
-		type = defaultUnitType
+		type = defaultUnitType;
 	}
+
 	if (properties == undefined) {
-		properties = defaultUnitProperties
+		properties = defaultUnitProperties;
 	}
-	var unit
 
 	if (originalUnit != null) {
-		unit = originalUnit
-		if (unit.loc != loc) {
-		}
-		unit.loc = loc
+		unit = originalUnit;
+		unit.loc = loc;
 	} else {
-		unit = new Unit(loc, id, type, user, properties)
-		units.push(unit)
+		unit = new Unit(loc, id, type, user, properties);
+		units.push(unit);
 	}
-	unit.seen = true
-	vectorSource.addFeature(unit.feature)
+	unit.seen = true;
+	vectorSource.addFeature(unit.feature);
 	updateZoom();
-	return unit
+	return unit;
 }
 
 function moveUnit(unit, loc) {
-	unit.loc = loc
+	unit.loc = loc;
 	updateZoom();
 }
 
 function moveCommand(unit, loc) {
-
 	if (unit.moveFeature) {
-		movesSource.removeFeature(unit.moveFeature)
+		movesSource.removeFeature(unit.moveFeature);
 	}
 
 	var f = new Feature(new LineString([
 		unit.loc,
 		loc
-	]))
-	movesSource.addFeature(f)
+	]));
+	movesSource.addFeature(f);
 
-	unit.moveFeature = f
+	unit.moveFeature = f;
 }
 
 function getUnitFromFeature(feature) {
 	for (var unit of units) {
 		if (unit.feature == feature) {
-			return unit
+			return unit;
 		}
 	}
-	throw "Can't find unit with requested feature"
+	throw "Can't find unit with requested feature";
 }
 
 function getUnitsAt(pixel) {
-	var foundUnits = []
+	var foundUnits = [];
 	for (var unit of units) {
-		var unitPixel = map.getPixelFromCoordinate(unit.visualLoc)
-		var distance = Math.hypot(unitPixel[0]-pixel[0]-15*unitPixel[0]/width, unitPixel[1] - pixel[1]-4*unitPixel[1]/height)
+		var unitPixel = map.getPixelFromCoordinate(unit.visualLoc);
+		var distance = Math.hypot(unitPixel[0]-pixel[0]-15*unitPixel[0]/width, unitPixel[1] - pixel[1]-4*unitPixel[1]/height);
 		if (distance<22) {
-			foundUnits.push(unit)
+			foundUnits.push(unit);
 		}
 	}
-	return foundUnits
+	return foundUnits;
 }
 
 function displayMoveCircle(unit) {
 	if (unit.user == username) {
-		var rad = parseInt(unit.properties["Speed"])*1000
-		moveCircleSource.clear()
-		var moveCircleFeature = new Feature(new Circle(unit.loc, rad))
-		moveCircleSource.addFeature(moveCircleFeature)
+		var rad = parseInt(unit.properties["Speed"])*1000;
+		moveCircleSource.clear();
+		var moveCircleFeature = new Feature(new Circle(unit.loc, rad));
+		moveCircleSource.addFeature(moveCircleFeature);
 	}
 }
 
@@ -463,13 +493,13 @@ function displayTooltip(units, pixel) {
 	top: ${pixel[1]}px;
 	left: ${pixel[0]}px;
 	display:block;
-	`
-	var tooltipTable = document.getElementById("tooltipTable")
+	`;
+	var tooltipTable = document.getElementById("tooltipTable");
 	if (units.length == 1) {
-		var unit = units[0]
+		var unit = units[0];
 		if (selectedUnit != unit) {
-			displayMoveCircle(unit)
-			selectedUnit = unit
+			displayMoveCircle(unit);
+			selectedUnit = unit;
 		}
 		tooltipTable.innerHTML = `
 		<tr class="tooltipHeader">
@@ -478,37 +508,37 @@ function displayTooltip(units, pixel) {
 		<tr>
 		<td style="font-style: italic">${unit.user}</td>
 		</tr>
-		`
+		`;
 		for (var prop in unit.properties) {
 			tooltipTable.innerHTML += `
 			<tr class="singleUnit">
 				<td>${prop}</td>
 				<td>${unit.properties[prop]}</td>
 			</tr>
-			`
+			`;
 		}
 	} else {
 		if (selectedUnit != null) {
-			selectedUnit = null
+			selectedUnit = null;
 		}
 		tooltipTable.innerHTML = `
 		<tr class="tooltipHeader">
 			<th>Unit Group</th>
 		</tr>
-		`
+		`;
 		for (var unit of units) {
 			tooltipTable.innerHTML += `
 			<tr id=${unit.id} class="unitGroup">
 				<td>${unit.type}</td>
 				<td style="font-style: italic">${unit.user}</td>
 			</tr>
-			`
+			`;
 		}
 	}
 }
 
 function createUnit(loc, type, user) {
-	changes.push({type: "add", loc: loc, unitType: type, user: user})
+	changes.push({type: "add", loc: loc, unitType: type, user: user});
 }
 
 function displayRightTooltip(pixel) {
@@ -518,16 +548,16 @@ function displayRightTooltip(pixel) {
 	top: ${pixel[1]}px;
 	left: ${pixel[0]}px;
 	display:block;
-	`
-	var tooltipTable = document.getElementById("tooltipTable")
+	`;
+	var tooltipTable = document.getElementById("tooltipTable");
 	 var str = `
 	<tr class="tooltipHeader">
 		<th>New Unit</th>
 	</tr><tr>
 		<td>type:</td><td><select id="typeEntry">
-	`
+	`;
 	for (var type of unitTypes) {
-		str += `<option value="${type}">${type}</option>`
+		str += `<option value="${type}">${type}</option>`;
 	}
 
 	str += `
@@ -535,9 +565,9 @@ function displayRightTooltip(pixel) {
 
 	</tr><tr>
 		<td>type:</td><td><select id="userEntry">
-	`
+	`;
 	for (var user of usersList) {
-		str += `<option value="${user}">${user}</option>`
+		str += `<option value="${user}">${user}</option>`;
 	}
 
 	str += `
@@ -545,123 +575,125 @@ function displayRightTooltip(pixel) {
 	</tr><tr>
 		<td/><td><button type="button" id="createUnitButton"/>Create</td>
 	</tr>
-	`
-	tooltipTable.innerHTML = str
+	`;
+	tooltipTable.innerHTML = str;
 }
 
 function hideTooltip() {
-	tooltipElement.style.cssText = 'display:none;'
-	selectedUnit = null
-	moveCircleSource.clear()
+	tooltipElement.style.cssText = 'display:none;';
+	selectedUnit = null;
+	moveCircleSource.clear();
 }
 
 function updateTooltip() {
 	if (selectedUnit != null) {
-		 displayTooltip([selectedUnit], map.getPixelFromCoordinate(selectedUnit.loc))
+		 displayTooltip([selectedUnit], map.getPixelFromCoordinate(selectedUnit.loc));
 	}
 }
 
 map.on('click', function (event) {
-	var unitsUnder = getUnitsAt(event.pixel)
+	var unitsUnder = getUnitsAt(event.pixel);
 	if (unitsUnder.length != 0) {
-		displayTooltip(unitsUnder, event.pixel)
-		lastClick = event.pixel
+		displayTooltip(unitsUnder, event.pixel);
+		lastClick = event.pixel;
 
 	} else {
 		hideTooltip();
 	}
-})
+});
 
 map.on('moveend', function (event) {
 	updateZoom();
-	updateTooltip()
-})
+	updateTooltip();
+});
 
 function updateZoom() {
+	var gridWidth;
 	function setGraticuleWidth(width) {
 		graticule.setStyle(new Style({
 			stroke: new Stroke({
 				color: ['black'],
 				width: width,
 			})
-		}))
+		}));
 	}
-	var zoom = map.getView().getZoom()
-	var gridWidth
+
+	var zoom = map.getView().getZoom();
+
 	if (zoom > 12) {
-		gridWidth = 1000
+		gridWidth = 1000;
 	} else if (zoom > 11) {
-		gridWidth = 2000
+		gridWidth = 2000;
 	} else if (zoom > 10) {
-		gridWidth = 5000
+		gridWidth = 5000;
 	} else if (zoom > 9) {
-		gridWidth = 10000
+		gridWidth = 10000;
 	} else if (zoom > 8) {
-		gridWidth = 20000
+		gridWidth = 20000;
 	} else if (zoom > 7) {
-		gridWidth = 30000
+		gridWidth = 30000;
 	} else if (zoom > 6) {
-		gridWidth = 50000
+		gridWidth = 50000;
 	} else {
-		gridWidth = 150000
+		gridWidth = 150000;
 	}
-	setGraticuleWidth((Math.exp(zoom-5)-1)/20000)
-	var unitGroups = new Object()
-	vectorSource.clear()
+	setGraticuleWidth((Math.exp(zoom-5)-1)/20000);
+	var unitGroups = new Object();
+	vectorSource.clear();
 	for (var unit of units) {
-		unit.updateZoom(gridWidth)
-		var x = unit.visualLoc[0].toString()
-		var y = unit.visualLoc[1].toString()
+		unit.updateZoom(gridWidth);
+		var x = unit.visualLoc[0].toString();
+		var y = unit.visualLoc[1].toString();
 		if (unitGroups[y]) {
 			if (unitGroups[y][x]) {
-				unitGroups[y][x].addUnit(unit)
+				unitGroups[y][x].addUnit(unit);
 			} else {
-				unitGroups[y][x] = new UnitGroup(unit)
-				unit.display()
+				unitGroups[y][x] = new UnitGroup(unit);
+				unit.display();
 			}
 		} else {
-			unitGroups[y] = new Object()
-			unitGroups[y][x] = new UnitGroup(unit)
-			unit.display()
+			unitGroups[y] = new Object();
+			unitGroups[y][x] = new UnitGroup(unit);
+			unit.display();
 		}
 	}
 }
 
 
 function rightClick(e) {
-	e.preventDefault()
-	var loc = roundLocation(map.getCoordinateFromPixel([e.clientX, e.clientY]))
+	e.preventDefault();
+	var loc = roundLocation(map.getCoordinateFromPixel([e.clientX, e.clientY]));
 	if (selectedUnit != null) {
-		var u = selectedUnit
-		var allowed = false
+		var u = selectedUnit;
+		var allowed = false;
 		if (username == "admin") {
-			moveUnit(selectedUnit, loc)
-			hideTooltip()
-			allowed = true
+			moveUnit(selectedUnit, loc);
+			hideTooltip();
+			allowed = true;
 		} else {
 			var inRange = Math.hypot(
 				loc[0] - selectedUnit.loc[0],
 				loc[1] - selectedUnit.loc[1]
-			) <= parseInt(selectedUnit.properties["Speed"])*1000
+			) <= parseInt(selectedUnit.properties["Speed"])*1000;
 
 			if (inRange && selectedUnit.user == username) {
-				allowed = true
-				moveCommand(selectedUnit, loc)
+				allowed = true;
+				moveCommand(selectedUnit, loc);
 			}
 			if (!inRange) {
-				notification.show(`Units can only travel as far as their speed (km) each turn`)
+				notification.show(`Units can only travel as far as their speed (km) each turn`);
 			}
 			if (selectedUnit.user != username) {
-				notification.show(`This is not your unit`)
+				notification.show(`This is not your unit`);
 			}
 		}
 		if (allowed) {
-			changes.push({type: "move", unitId: u.id, newLocation: loc})
+			changes.push({type: "move", unitId: u.id, newLocation: loc});
 		}
 	} else {
 		if (username == "admin") {
-			tooltipLocation = loc
-			displayRightTooltip([e.clientX, e.clientY])
+			tooltipLocation = loc;
+			displayRightTooltip([e.clientX, e.clientY]);
 		}
 	}
 }
@@ -669,151 +701,150 @@ function rightClick(e) {
 function getUnitById(id) {
 	for (var unit of units) {
 		if (unit.id == id) {
-			return unit
+			return unit;
 		}
 	}
-	return null
+	return null;
 }
 
 function handleResponse() {
 	if (this.readyState == 4 && this.status == 200) {
-		var responseJSON = JSON.parse(this.responseText)
-		var error = responseJSON.error
+		var responseJSON = JSON.parse(this.responseText);
+		var error = responseJSON.error;
 		if (username == "admin"){
 			if (responseJSON.unitTypes) {
-				unitTypes = responseJSON.unitTypes
+				unitTypes = responseJSON.unitTypes;
 			}
 			if (responseJSON.usersList) {
-				usersList = responseJSON.usersList
+				usersList = responseJSON.usersList;
 			}
 		}
 		if (error) {
-			console.log(error)
-			alert(`Error: ${error}`)
+			console.log(error);
+			alert(`Error: ${error}`);
 			if (error == "Wrong password") {
-				clearInterval(repeatSync)
-				login()
+				clearInterval(repeatSync);
+				login();
 			}
 		} else {
-			var mapJSON = responseJSON.mapState
-			vectorSource.clear()
+			var mapJSON = responseJSON.mapState;
+			vectorSource.clear();
 			for (var unit of units) {
-				unit.seen = false
+				unit.seen = false;
 			}
 			for (var rawUnit of mapJSON.units) {
-				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.user, rawUnit.properties)
+				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.user, rawUnit.properties);
 			}
 
 			for (var unit of units) {
 				if (!unit.seen) {
-					units.splice(units.indexOf(unit), 1)
+					units.splice(units.indexOf(unit), 1);
 				}
 			}
 			if (username != "admin") {
-				nextTurnChange = responseJSON.nextTurnChange
-				isUsersTurn = responseJSON.isCorrectTurn
-				clearTimeout(turnTimer)
-				var d = new Date()
-				var timeToChange = nextTurnChange-d.getTime()
-				// console.log(`time to change: ${timeToChange}ms`)
-				turnTimer = setTimeout(turnChange, timeToChange)
+				nextTurnChange = responseJSON.nextTurnChange;
+				isUsersTurn = responseJSON.isCorrectTurn;
+				clearTimeout(turnTimer);
+				var d = new Date();
+				var timeToChange = nextTurnChange-d.getTime();
+
+				turnTimer = setTimeout(turnChange, timeToChange);
 				if (syncNeedsRestarting) {
-					syncNeedsRestarting = false
-					repeatSync = setInterval(sync, 1000)
-					// console.log(`restarting sync. ${timeToChange}`)
+					syncNeedsRestarting = false;
+					repeatSync = setInterval(sync, 1000);
 				}
 				if (responseJSON.anyChanges) {
-					onUnitsChange()
+					onUnitsChange();
 				}
 			}
 		}
 	}
 }
-var syncNeedsRestarting = false
+
+syncNeedsRestarting = false;
 
 function sync() {
 	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.onreadystatechange = handleResponse
-	xmlhttp.open("POST", "server.js", true)
-	xmlhttp.setRequestHeader("Content-Type", "application/json")
+	xmlhttp.onreadystatechange = handleResponse;
+	xmlhttp.open("POST", "server.js", true);
+	xmlhttp.setRequestHeader("Content-Type", "application/json");
 	var requestData = {
 		requestType: "sync",
 		changes: [],
 		username: username,
 		password: password
-	}
+	};
 	if (username == "admin") {
-		requestData.changes = changes
-		changes = []
+		requestData.changes = changes;
+		changes = [];
 	}
 	xmlhttp.send(JSON.stringify(requestData));
 }
 
 function turnChange() {
-	clearInterval(repeatSync)
-	// console.log("Starting turn change")
+	clearInterval(repeatSync);
+
 	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.onreadystatechange = handleResponse
-	xmlhttp.open("POST", "server.js", true)
-	xmlhttp.setRequestHeader("Content-Type", "application/json")
+	xmlhttp.onreadystatechange = handleResponse;
+	xmlhttp.open("POST", "server.js", true);
+	xmlhttp.setRequestHeader("Content-Type", "application/json");
 	var requestData = {
 		requestType: "turnChange",
 		changes: changes,
 		username: username,
 		password: password
-	}
-	changes = []
+	};
+	changes = [];
 	xmlhttp.send(JSON.stringify(requestData));
-	syncNeedsRestarting = true
-	movesSource.clear()
-	moveCircleSource.clear()
-	hideTooltip()
+	syncNeedsRestarting = true;
+	movesSource.clear();
+	moveCircleSource.clear();
+	hideTooltip();
 	for (var unit of units) {
-		unit.moveFeature = null
+		unit.moveFeature = null;
 	}
 }
 
-login()
-
-var repeatSync
-
-var turnTimeUpdater
+login();
 
 function updateTurnTime() {
-	turnManager.setContent(getTurnManagerContent())
-	document.getElementById("endTurnButton").onclick = endTurnEarly
+	turnManager.setContent(getTurnManagerContent());
+	document.getElementById("endTurnButton").onclick = endTurnEarly;
 }
 
 function endTurnEarly() {
-	clearTimeout(turnTimer)
-	turnChange()
+	clearTimeout(turnTimer);
+	turnChange();
 }
 
 function start() {
 	sync();
+
 	if (username == "admin") {
-		turnTimeButton = new Button ({
+		turnTimeButton = new Button({
 			html: '<i class="material-icons">av_timer</i>',
 			className: "turnTime",
 			title: "Set turn time",
 			handleClick: function() {
-				var time = prompt("New turn time (per user) in seconds: ", "60")
-				changes.push({type: "setTurnTime", time: parseInt(time)})
+				var time = prompt("New turn time (per user) in seconds: ", "60");
+				changes.push({type: "setTurnTime", time: parseInt(time)});
 			}
 		});
+
 		map.addControl(turnTimeButton);
 	}
-	turnTimeUpdater = setInterval(updateTurnTime, 500)
-	repeatSync = setInterval(sync, 1000)
+
+	turnTimeUpdater = setInterval(updateTurnTime, 500);
+	repeatSync = setInterval(sync, 1000);
 
 	// Title
 	var turnManager = new Overlay({
 		closeBox: false,
 		className: "title",
 		content: username
-	})
+	});
 
-	map.addControl(turnManager)
+	map.addControl(turnManager);
 }
 
 function login() {
@@ -821,29 +852,29 @@ function login() {
 		content: 'If you are reading this then contact an admin to log you in.<br/>username:<input class="usernameValue" autofocus/>',
 		title: 'Login',
 		buttons:{submit:'Submit'}
-	})
+	});
 	dialogPromptUser.on('button', function (e) {
 		if (e.button === 'submit') {
-			username = e.inputs['usernameValue'].value
+			username = e.inputs['usernameValue'].value;
 
-			dialogPromptPassword.show()
-			document.getElementById("passwordInput").focus()
+			dialogPromptPassword.show();
+			document.getElementById("passwordInput").focus();
 		}
-	})
+	});
 
 	dialogPromptPassword.setContent({
 		content: 'If you are reading this then contact an admin to log you in.<br/>password:<input type="password" id="passwordInput" class="passwordValue" autofocus/>',
 		title: 'Login',
 		buttons:{submit:'Submit', cancel:'Cancel'}
-	})
+	});
 	dialogPromptPassword.on('button', function (e) {
-		password = e.inputs['passwordValue'].value
+		password = e.inputs['passwordValue'].value;
 
-		start()
-	})
+		start();
+	});
 
-	map.addControl(dialogPromptUser)
-	map.addControl(dialogPromptPassword)
+	map.addControl(dialogPromptUser);
+	map.addControl(dialogPromptPassword);
 
-	dialogPromptUser.show()
+	dialogPromptUser.show();
 }
