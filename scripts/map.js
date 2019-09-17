@@ -3,7 +3,7 @@ import View from 'ol/View.js';
 import {MultiPoint, Point, LineString, Circle, Polygon} from 'ol/geom.js';
 import TileLayer from 'ol/layer/Tile.js';
 import OSM from 'ol/source/OSM.js';
-import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style.js';
+import {Circle as CircleStyle, Fill, Stroke, Style, Icon} from 'ol/style.js';
 import Text from 'ol/style/Text';
 import Feature from 'ol/Feature';
 import VectorSource from 'ol/source/Vector';
@@ -23,7 +23,7 @@ const jsts = require('jsts');
 
 // OpenLayers
 var map;
-var vectorSource, movesSource, moveCircleSource, fogSource;
+var unitSource, movesSource, moveCircleSource, fogSource;
 var turnManager;
 var tooltipElement, graticule;
 var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton;
@@ -52,6 +52,7 @@ var height = window.innerHeight
 || document.documentElement.clientHeight
 || document.body.clientHeight;
 
+
 // Styles
 
 var pointStyle = new Style({
@@ -69,6 +70,21 @@ var graticuleStyle = new Style({
 	})
 });
 
+var userColours = [
+	[25, 75, 255],
+	[255, 0, 0]
+]
+
+function unitStyleGenerator(type, user) {
+	return new Style({
+		image: new Icon({
+			src: `../res/units/${type}.svg`,
+			scale: 0.25,
+			color: userColours[usersList.indexOf(user)]
+		})
+	})
+}
+
 
 // Classes
 
@@ -76,7 +92,8 @@ class Unit {
 	constructor(loc, id, type, user, properties) {
 		this.feature = new Feature(new Point(loc));
 		this.feature.setId(id);
-		this.feature.setStyle(pointStyle);
+		this.feature.setStyle(unitStyleGenerator(type, user));
+		// this.feature.setStyle(pointStyle);
 		this.loc = loc;
 		this.type = type;
 		this.user = user;
@@ -112,13 +129,13 @@ class Unit {
 	}
 
 	hide() {
-		if (vectorSource.hasFeature(this.feature)){
-			vectorSource.removeFeature(this.feature);
+		if (unitSource.hasFeature(this.feature)){
+			unitSource.removeFeature(this.feature);
 		}
 	}
 
 	display() {
-		vectorSource.addFeature(this.feature);
+		unitSource.addFeature(this.feature);
 	}
 }
 
@@ -133,7 +150,7 @@ class UnitGroup {
 			this.units[0].hide();
 			this.feature = new Feature(new Point(unit.visualLoc));
 			this.feature.setStyle(pointStyle);
-			vectorSource.addFeature(this.feature);
+			unitSource.addFeature(this.feature);
 		}
 
 		this.units.push(unit);
@@ -190,10 +207,12 @@ var TooltipControl = (function (Control) {
 
 // Map setup
 
-vectorSource = new VectorSource();
+unitSource = new VectorSource();
 movesSource = new VectorSource();
 moveCircleSource = new VectorSource();
 fogSource = new VectorSource();
+
+tooltipElement = document.getElementById('tooltip');
 
 map = new Map({
 	controls: defaultControls().extend([
@@ -215,7 +234,7 @@ map = new Map({
 			source:fogSource
 		}),
 		new VectorLayer({
-			source: vectorSource
+			source: unitSource
 		})
 	],
 	target: 'map',
@@ -264,10 +283,18 @@ mapMaxX = 5000000;
 mapMaxY = 6000000;
 
 
+// Data stuff
+
+units = [];
+
+url = "test.json";
+started = false;
+
+tooltipLocation = null;
+selectedUnit = null;
+
 lastClick = null;
 changes = [];
-
-tooltipElement = document.getElementById('tooltip');
 
 
 function getTurnManagerContent() {
@@ -298,16 +325,6 @@ turnManager = new Overlay({
 
 map.addControl(turnManager);
 
-
-// Data stuff
-
-units = [];
-
-url = "test.json";
-started = false;
-
-tooltipLocation = null;
-selectedUnit = null;
 
 document.getElementById('map').oncontextmenu = rightClick;
 
@@ -399,85 +416,6 @@ function onUnitsChange() {
 	fogFeature.setGeometry(new Polygon([pointsOfBounds, ...cutoutsMerged]));
 }
 
-function roundLocation(loc) {
-	return [Math.round(loc[0]/1000)*1000, Math.round(loc[1]/1000)*1000];
-}
-
-function addUnit(loc, id, type, user, properties) {
-	var unit;
-	var originalUnit = getUnitById(id);
-
-	if (id == undefined) {
-		if (units) {
-			id = units[units.length-1].id+1;
-		} else {
-			id = 0;
-		}
-	}
-
-	loc = roundLocation(loc);
-
-	if (type == undefined) {
-		type = defaultUnitType;
-	}
-
-	if (properties == undefined) {
-		properties = defaultUnitProperties;
-	}
-
-	if (originalUnit != null) {
-		unit = originalUnit;
-		unit.loc = loc;
-	} else {
-		unit = new Unit(loc, id, type, user, properties);
-		units.push(unit);
-	}
-	unit.seen = true;
-	vectorSource.addFeature(unit.feature);
-	updateZoom();
-	return unit;
-}
-
-function moveUnit(unit, loc) {
-	unit.loc = loc;
-	updateZoom();
-}
-
-function moveCommand(unit, loc) {
-	if (unit.moveFeature) {
-		movesSource.removeFeature(unit.moveFeature);
-	}
-
-	var f = new Feature(new LineString([
-		unit.loc,
-		loc
-	]));
-	movesSource.addFeature(f);
-
-	unit.moveFeature = f;
-}
-
-function getUnitFromFeature(feature) {
-	for (var unit of units) {
-		if (unit.feature == feature) {
-			return unit;
-		}
-	}
-	throw "Can't find unit with requested feature";
-}
-
-function getUnitsAt(pixel) {
-	var foundUnits = [];
-	for (var unit of units) {
-		var unitPixel = map.getPixelFromCoordinate(unit.visualLoc);
-		var distance = Math.hypot(unitPixel[0]-pixel[0]-15*unitPixel[0]/width, unitPixel[1] - pixel[1]-4*unitPixel[1]/height);
-		if (distance<22) {
-			foundUnits.push(unit);
-		}
-	}
-	return foundUnits;
-}
-
 function displayMoveCircle(unit) {
 	if (unit.user == username) {
 		var rad = parseInt(unit.properties["Speed"])*1000;
@@ -486,7 +424,6 @@ function displayMoveCircle(unit) {
 		moveCircleSource.addFeature(moveCircleFeature);
 	}
 }
-
 
 function displayTooltip(units, pixel) {
 	tooltipElement.style.cssText = `
@@ -539,10 +476,6 @@ function displayTooltip(units, pixel) {
 	}
 }
 
-function createUnit(loc, type, user) {
-	changes.push({type: "add", loc: loc, unitType: type, user: user});
-}
-
 function displayRightTooltip(pixel) {
 	tooltipElement.style.cssText = `
 	position: absolute;
@@ -593,6 +526,89 @@ function updateTooltip() {
 	}
 }
 
+function roundLocation(loc) {
+	return [Math.round(loc[0]/1000)*1000, Math.round(loc[1]/1000)*1000];
+}
+
+function addUnit(loc, id, type, user, properties) {
+	var unit;
+	var originalUnit = getUnitById(id);
+
+	if (id == undefined) {
+		if (units) {
+			id = units[units.length-1].id+1;
+		} else {
+			id = 0;
+		}
+	}
+
+	loc = roundLocation(loc);
+
+	if (type == undefined) {
+		type = defaultUnitType;
+	}
+
+	if (properties == undefined) {
+		properties = defaultUnitProperties;
+	}
+
+	if (originalUnit != null) {
+		unit = originalUnit;
+		unit.loc = loc;
+	} else {
+		unit = new Unit(loc, id, type, user, properties);
+		units.push(unit);
+	}
+	unit.seen = true;
+	unitSource.addFeature(unit.feature);
+	updateZoom();
+	return unit;
+}
+
+function moveUnit(unit, loc) {
+	unit.loc = loc;
+	updateZoom();
+}
+
+function moveCommand(unit, loc) {
+	if (unit.moveFeature) {
+		movesSource.removeFeature(unit.moveFeature);
+	}
+
+	var f = new Feature(new LineString([
+		unit.loc,
+		loc
+	]));
+	movesSource.addFeature(f);
+
+	unit.moveFeature = f;
+}
+
+function getUnitFromFeature(feature) {
+	for (var unit of units) {
+		if (unit.feature == feature) {
+			return unit;
+		}
+	}
+	throw "Can't find unit with requested feature";
+}
+
+function createUnit(loc, type, user) {
+	changes.push({type: "add", loc: loc, unitType: type, user: user});
+}
+
+function getUnitsAt(pixel) {
+	var foundUnits = [];
+	for (var unit of units) {
+		var unitPixel = map.getPixelFromCoordinate(unit.visualLoc);
+		var distance = Math.hypot(unitPixel[0]-pixel[0]-15*unitPixel[0]/width, unitPixel[1] - pixel[1]-4*unitPixel[1]/height);
+		if (distance<22) {
+			foundUnits.push(unit);
+		}
+	}
+	return foundUnits;
+}
+
 map.on('click', function (event) {
 	var unitsUnder = getUnitsAt(event.pixel);
 	if (unitsUnder.length != 0) {
@@ -641,7 +657,7 @@ function updateZoom() {
 	}
 	setGraticuleWidth((Math.exp(zoom-5)-1)/20000);
 	var unitGroups = new Object();
-	vectorSource.clear();
+	unitSource.clear();
 	for (var unit of units) {
 		unit.updateZoom(gridWidth);
 		var x = unit.visualLoc[0].toString();
@@ -730,7 +746,7 @@ function handleResponse() {
 			}
 		} else {
 			var mapJSON = responseJSON.mapState;
-			vectorSource.clear();
+			unitSource.clear();
 			for (var unit of units) {
 				unit.seen = false;
 			}
@@ -870,9 +886,14 @@ function login() {
 		buttons:{submit:'Submit', cancel:'Cancel'}
 	});
 	dialogPromptPassword.on('button', function (e) {
-		password = e.inputs['passwordValue'].value;
+		if (e.button === 'submit') {
+			password = e.inputs['passwordValue'].value;
 
-		start();
+			start();
+		} else if (e.button === 'cancel') {
+			login();
+			return
+		}
 	});
 
 	map.addControl(dialogPromptUser);

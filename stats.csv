@@ -8,7 +8,7 @@ Mechanised Infantry Battalion,MECH INF BTN,25,n/a,3,2,10,1000,Soldiers,Regular
 Surface to Air Missile Battery,SAM BAT,15,n/a,4,4,10,12,SAMs,Regular
 Anti-Aircraft Artillery Battery,AAA BAT,15,n/a,4,3,10,12,AAA,Regular
 Transport Company,TRAN COY,30,n/a,3,2,5,40,trucks,Regular
-Tank  Battalion,TANK BTN,25,n/a,4,0,20,36,Tanks,Regular
+Tank Battalion,TANK BTN,25,n/a,4,0,20,36,Tanks,Regular
 Transport Helicopter Squadron,TH SQN,90,450,6,2,5,12,Helicopters,Regular
 Attack Helicopter Squadron,AH SQN,120,600,5,2,30,12,Helicopters,Shock
 Jet Fighter Squadron,F SQN,600,1800,2,2,20,12,Fighters,Regular

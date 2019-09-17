@@ -258,8 +258,8 @@ csv
 
 
 turnChangeTime = {
-	[users[0]]: d.getTime()+settings.turnTime,
-	[users[1]]: d.getTime()+settings.turnTime*2
+	[users[0]]: (new Date()).getTime()+settings.turnTime,
+	[users[1]]: (new Date()).getTime()+settings.turnTime*2
 };
 
 
@@ -273,6 +273,8 @@ fs.writeFileSync('data/map.json', defaultMap);
 
 app.use(express.static('dist'));
 app.use(bodyParser.json());
+
+app.use('/res', express.static('res'));
 
 app.post('/server.js', function (req, res, next) {
 	var rawdata = fs.readFileSync('data/map.json');

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="64mm"
+   height="64mm"
+   viewBox="0 0 64 64"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.4 (unknown)"
+   sodipodi:docname="Transport Ship.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="2.8284271"
+     inkscape:cx="6.0326342"
+     inkscape:cy="123.68583"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1013"
+     inkscape:window-x="1280"
+     inkscape:window-y="64"
+     inkscape:window-maximized="1"
+     showguides="true"
+     inkscape:guide-bbox="true">
+    <sodipodi:guide
+       position="26.524478,59.795832"
+       orientation="0,1"
+       id="guide911"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="19.831399,30.588997"
+       orientation="1,0"
+       id="guide913"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="44.516145,65.682811"
+       orientation="1,0"
+       id="guide915"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="32.047655,49.410936"
+       orientation="1,0"
+       id="guide932"
+       inkscape:locked="false" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-233)"
+     style="display:inline">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#1a1a1d;stroke-width:2.06500006;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect12"
+       width="63.877991"
+       height="44.884682"
+       x="0.094494045"
+       y="242.77943" />
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot4501"
+       style="fill:black;fill-opacity:1;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;letter-spacing:0px;word-spacing:0px"><flowRegion
+         id="flowRegion4503"><rect
+           id="rect4505"
+           width="80.568756"
+           height="43.487068"
+           x="87.681244"
+           y="155.62274" /></flowRegion><flowPara
+         id="flowPara4507" /></flowRoot>    <flowRoot
+       xml:space="preserve"
+       id="flowRoot4509"
+       style="fill:black;fill-opacity:1;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;letter-spacing:0px;word-spacing:0px"><flowRegion
+         id="flowRegion4511"><rect
+           id="rect4513"
+           width="93.296677"
+           height="49.851028"
+           x="74.953323"
+           y="151.3801" /></flowRegion><flowPara
+         id="flowPara4515" /></flowRoot>    <g
+       aria-label="C"
+       transform="matrix(0.22200126,0,0,0.22200126,16.22271,209.89939)"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       id="flowRoot4517">
+      <path
+         d="m 88.595703,158.22461 v 6.65625 q -3.1875,-2.96875 -6.8125,-4.4375 -3.59375,-1.46875 -7.65625,-1.46875 -8,0 -12.25,4.90625 -4.25,4.875 -4.25,14.125 0,9.21875 4.25,14.125 4.25,4.875 12.25,4.875 4.0625,0 7.65625,-1.46875 3.625,-1.46875 6.8125,-4.4375 v 6.59375 q -3.3125,2.25 -7.03125,3.375 -3.6875,1.125 -7.8125,1.125 -10.59375,0 -16.6875,-6.46875 -6.09375,-6.5 -6.09375,-17.71875 0,-11.25 6.09375,-17.71875 6.09375,-6.5 16.6875,-6.5 4.1875,0 7.875,1.125 3.71875,1.09375 6.96875,3.3125 z"
+         style="font-size:64px"
+         id="path836"
+         inkscape:connector-curvature="0" />
+    </g>
+    <circle
+       style="fill:#ffffff;fill-opacity:1;stroke:#1a1a1d;stroke-width:1.03506315;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="path3496"
+       cx="32.219463"
+       cy="267.53354"
+       r="11.943574" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.02688515;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 32.096379,255.51384 v 24.21955"
+       id="path3517"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.03506315;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 44.516146,267.46898 H 19.729125"
+       id="path3519"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.03506315;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 23.666647,259.01299 17.033515,17.10563"
+       id="path3521"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.03506315;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 40.700162,259.07754 23.666647,275.66678"
+       id="path3523"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Layer 2" />
+  <g
+     inkscape:groupmode="layer"
+     id="layer7"
+     inkscape:label="Layer 3" />
+</svg>

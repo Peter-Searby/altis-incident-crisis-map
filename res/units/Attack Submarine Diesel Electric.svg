@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="64mm"
+   height="64mm"
+   viewBox="0 0 64 64"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.4 (unknown)"
+   sodipodi:docname="Attack Submarine Diesel Electric.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="2.8284271"
+     inkscape:cx="6.0326342"
+     inkscape:cy="123.68583"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1013"
+     inkscape:window-x="1280"
+     inkscape:window-y="64"
+     inkscape:window-maximized="1"
+     showguides="true"
+     inkscape:guide-bbox="true">
+    <sodipodi:guide
+       position="26.524478,59.795832"
+       orientation="0,1"
+       id="guide911"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="19.831399,30.588997"
+       orientation="1,0"
+       id="guide913"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="44.516145,65.682811"
+       orientation="1,0"
+       id="guide915"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="32.047655,49.410936"
+       orientation="1,0"
+       id="guide932"
+       inkscape:locked="false" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-233)"
+     style="display:inline">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#1a1a1d;stroke-width:2.06500006;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect12"
+       width="63.877991"
+       height="44.884682"
+       x="0.094494045"
+       y="242.77943" />
+    <path
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 17.866969,264.35302 6.501331,-6.50133 h 15.294499 l 6.758577,6.75858 -5.869905,5.86991 H 23.760262 Z"
+       id="path4499"
+       inkscape:connector-curvature="0" />
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot4501"
+       style="fill:black;fill-opacity:1;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;letter-spacing:0px;word-spacing:0px"><flowRegion
+         id="flowRegion4503"><rect
+           id="rect4505"
+           width="80.568756"
+           height="43.487068"
+           x="87.681244"
+           y="155.62274" /></flowRegion><flowPara
+         id="flowPara4507" /></flowRoot>    <flowRoot
+       xml:space="preserve"
+       id="flowRoot4509"
+       style="fill:black;fill-opacity:1;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;letter-spacing:0px;word-spacing:0px"><flowRegion
+         id="flowRegion4511"><rect
+           id="rect4513"
+           width="93.296677"
+           height="49.851028"
+           x="74.953323"
+           y="151.3801" /></flowRegion><flowPara
+         id="flowPara4515" /></flowRoot>    <g
+       aria-label="D"
+       transform="matrix(0.49522351,0,0,0.49555581,1.056283,196.83835)"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       id="flowRoot4517">
+      <path
+         d="m 55.248047,154.13477 v 22.67578 h 4.765625 q 6.035156,0 8.828125,-2.73438 2.8125,-2.73437 2.8125,-8.63281 0,-5.85938 -2.8125,-8.57422 -2.792969,-2.73437 -8.828125,-2.73437 z m -3.945313,-3.24219 h 8.105469 q 8.476563,0 12.441406,3.53515 3.964844,3.51563 3.964844,11.01563 0,7.53906 -3.984375,11.07422 -3.984375,3.53515 -12.421875,3.53515 h -8.105469 z"
+         id="path832"
+         inkscape:connector-curvature="0" />
+    </g>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Layer 2" />
+  <g
+     inkscape:groupmode="layer"
+     id="layer7"
+     inkscape:label="Layer 3" />
+</svg>
