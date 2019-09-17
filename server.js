@@ -9,6 +9,7 @@ const PORT = 8000;
 var defaultMap, settings;
 var users, logins, anyChanges, turnChangeTime;
 var unitTypes;
+var deploymentPhaseActive = true;
 
 
 function userAttemptAdminError(command) {
@@ -84,6 +85,13 @@ function handleSync(reqBody, mapJSON) {
 				case "setTurnTime":
 					settings.turnTime = change.time*1000;
 					break;
+				case "startTurnChanging":
+					deploymentPhaseActive = false;
+					turnChangeTime = {
+						[users[0]]: (new Date()).getTime()+settings.turnTime,
+						[users[1]]: (new Date()).getTime()+settings.turnTime*2
+					};
+					break;
 				default:
 					console.log(`Unusual change requested: ${change.type}`);
 			}
@@ -92,12 +100,12 @@ function handleSync(reqBody, mapJSON) {
 		var mapRaw = JSON.stringify(mapJSON);
 		response = {
 			turnTime: settings.turnTime,
-			anyChanges: anyChanges[reqBody.username]
+			anyChanges: anyChanges[reqBody.username],
+			usersList: users
 		};
 
 		if (reqBody.username == "admin") {
 			response.unitTypes = Object.keys(unitTypes);
-			response.usersList = users;
 			response.mapState = mapJSON;
 		} else {
 			checkForMissingUsers();
@@ -138,14 +146,20 @@ function advanceTurnTimer(offset) {
 }
 
 function checkForMissingUsers() {
-	var t = (new Date()).getTime();
-	var u = getNextTurnUser();
-	if (turnChangeTime[u] + 2000 < t){
-		advanceTurnTimer(-2000);
+	if (!deploymentPhaseActive) {
+		var t = (new Date()).getTime();
+		var u = getNextTurnUser();
+		if (turnChangeTime[u] + 2000 < t){
+			advanceTurnTimer(-2000);
+		}
 	}
 }
 
 function getNextTurnUser() {
+	if (deploymentPhaseActive) {
+		return "";
+	}
+
 	var nextUser = users[0];
 	for (var u of users) {
 		if (turnChangeTime[u] < turnChangeTime[nextUser]) {
@@ -188,12 +202,12 @@ function handleTurnChange(reqBody, mapJSON) {
 		response = {
 			nextTurnChange: turnChangeTime[reqBody.username],
 			turnTime: isCorrectTurn,
-			anyChanges: anyChanges[reqBody.username]
+			anyChanges: anyChanges[reqBody.username],
+			usersList: users
 		};
 		if (reqBody.username == "admin") {
 			response.mapState =  mapJSON;
 			response.unitTypes = Object.keys(unitTypes);
-			response.usersList = users;
 		} else {
 			response.mapState = restrictMapView(mapJSON, reqBody.username);
 		}
@@ -204,7 +218,7 @@ function handleTurnChange(reqBody, mapJSON) {
 		console.log(`Out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser} at time ${(new Date()).getTime()}`);
 		// response = makeError(`out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser}`)
 		response = {
-			mapState: mapJSON,
+			mapState: restrictMapView(mapJSON),
 			nextTurnChange: turnChangeTime[reqBody.username],
 			isCorrectTurn: isCorrectTurn,
 			anyChanges: anyChanges[reqBody.username]
@@ -232,6 +246,11 @@ anyChanges = {
 	[users[1]]: true,
 };
 
+turnChangeTime = {
+	[users[0]]: 0,
+	[users[1]]: 0
+};
+
 function changeOccured() {
 	for (var key in anyChanges) {
 		anyChanges[key] = true
@@ -254,13 +273,6 @@ csv
   .parseFile('./stats.csv', {headers: true})
   .on('error', error => console.error(error))
   .on('data', row => addUnitType(row));
-
-
-
-turnChangeTime = {
-	[users[0]]: (new Date()).getTime()+settings.turnTime,
-	[users[1]]: (new Date()).getTime()+settings.turnTime*2
-};
 
 
 defaultMap = fs.readFileSync('default-map.json');

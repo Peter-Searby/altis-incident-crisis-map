@@ -26,7 +26,7 @@ var map;
 var unitSource, movesSource, moveCircleSource, fogSource;
 var turnManager;
 var tooltipElement, graticule;
-var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton;
+var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton, deploymentFinishButton;
 var fogFeature;
 
 var selectedUnit;
@@ -73,7 +73,7 @@ var graticuleStyle = new Style({
 var userColours = [
 	[25, 75, 255],
 	[255, 0, 0]
-]
+];
 
 function unitStyleGenerator(type, user) {
 	return new Style({
@@ -82,7 +82,7 @@ function unitStyleGenerator(type, user) {
 			scale: 0.25,
 			color: userColours[usersList.indexOf(user)]
 		})
-	})
+	});
 }
 
 
@@ -300,7 +300,7 @@ changes = [];
 function getTurnManagerContent() {
 	var nextTurnString = "never";
 
-	if (nextTurnChange != null) {
+	if (nextTurnChange != null && nextTurnChange != 0) {
 		nextTurnString = `${Math.round((nextTurnChange-(new Date()).getTime())/1000)}s`;
 	}
 
@@ -733,9 +733,9 @@ function handleResponse() {
 			if (responseJSON.unitTypes) {
 				unitTypes = responseJSON.unitTypes;
 			}
-			if (responseJSON.usersList) {
-				usersList = responseJSON.usersList;
-			}
+		}
+		if (responseJSON.usersList) {
+			usersList = responseJSON.usersList;
 		}
 		if (error) {
 			console.log(error);
@@ -763,13 +763,15 @@ function handleResponse() {
 				nextTurnChange = responseJSON.nextTurnChange;
 				isUsersTurn = responseJSON.isCorrectTurn;
 				clearTimeout(turnTimer);
-				var d = new Date();
-				var timeToChange = nextTurnChange-d.getTime();
+				if (nextTurnChange != 0) {
+					var d = new Date();
+					var timeToChange = nextTurnChange-d.getTime();
 
-				turnTimer = setTimeout(turnChange, timeToChange);
-				if (syncNeedsRestarting) {
-					syncNeedsRestarting = false;
-					repeatSync = setInterval(sync, 1000);
+					turnTimer = setTimeout(turnChange, timeToChange);
+					if (syncNeedsRestarting) {
+						syncNeedsRestarting = false;
+						repeatSync = setInterval(sync, 1000);
+					}
 				}
 				if (responseJSON.anyChanges) {
 					onUnitsChange();
@@ -849,7 +851,18 @@ function start() {
 			}
 		});
 
+		deploymentFinishButton = new Button({
+			html: '<i class="material-icons">timer</i>',
+			className: "deploymentFinish",
+			title: "End deployment phase",
+			handleClick: function() {
+				changes.push({type: "startTurnChanging"});
+				map.removeControl(deploymentFinishButton);
+			}
+		});
+
 		map.addControl(turnTimeButton);
+		map.addControl(deploymentFinishButton);
 	}
 
 	turnTimeUpdater = setInterval(updateTurnTime, 500);

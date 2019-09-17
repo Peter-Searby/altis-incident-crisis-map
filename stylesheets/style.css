@@ -37,6 +37,11 @@ body {
 	top: 1em;
 }
 
+.deploymentFinish {
+	right: 40%;
+	top: 1em;
+}
+
 .turn-change {
 	position: absolute;
 	top: 0%;
