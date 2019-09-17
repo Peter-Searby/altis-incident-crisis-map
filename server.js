@@ -51,6 +51,15 @@ function restrictMapView(mapJSON, user) {
 	return mapJSON;
 }
 
+function getUnitById(units, id) {
+	for (var unit of units) {
+		if (unit.id == id) {
+			return unit;
+		}
+	}
+	return null;
+}
+
 function handleSync(reqBody, mapJSON) {
 	var changes = reqBody.changes;
 	if (reqBody.username == "admin" || changes.length==0) {
@@ -69,7 +78,6 @@ function handleSync(reqBody, mapJSON) {
 
 					break;
 				case "move":
-					changeOccured();
 					var id = change.unitId;
 					var newLocation = change.newLocation;
 					move: {
@@ -80,6 +88,15 @@ function handleSync(reqBody, mapJSON) {
 							}
 						}
 						console.log(`Invalid move made: id ${id} not found`);
+					}
+					break;
+				case "delete":
+					changeOccured();
+					var unit = getUnitById(mapJSON.units, change.unitId);
+					if (unit == null) {
+						console.log(`Invalid delete made: id ${change.unitId} not found`);
+					} else {
+						mapJSON.units = mapJSON.units.filter(u => u.id != change.unitId);
 					}
 					break;
 				case "setTurnTime":

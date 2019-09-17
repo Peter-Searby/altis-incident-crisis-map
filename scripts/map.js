@@ -198,6 +198,10 @@ var TooltipControl = (function (Control) {
 
 			createUnit(tooltipLocation, unitType, user);
 			hideTooltip();
+		} else if (clickedElement.id == "deleteUnitButton") {
+			var unitId = selectedUnit.id;
+			changes.push({type:"delete", unitId: unitId});
+			hideTooltip();
 		}
 	};
 
@@ -434,7 +438,10 @@ function displayTooltip(units, pixel) {
 	display:block;
 	`;
 	var tooltipTable = document.getElementById("tooltipTable");
+
 	if (units.length == 1) {
+		// Unit details
+
 		var unit = units[0];
 		if (selectedUnit != unit) {
 			displayMoveCircle(unit);
@@ -456,7 +463,16 @@ function displayTooltip(units, pixel) {
 			</tr>
 			`;
 		}
+		if (username == "admin") {
+			tooltipTable.innerHTML += `
+			<tr>
+				<td/><td><button type="button" id="deleteUnitButton"/>Delete</td>
+			</tr>
+			`
+		}
 	} else {
+		// Unit Group
+
 		if (selectedUnit != null) {
 			selectedUnit = null;
 		}
