@@ -5,6 +5,7 @@
 			"loc":[2808000,4853000],
 			"type":"Airborne Infantry Battalion",
 			"user":"Opfor",
+			"deployTime": 1,
 			"properties": {
 				"Abbreviation":"Para",
 				"Speed":"8",

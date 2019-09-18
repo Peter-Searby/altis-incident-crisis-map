@@ -21,26 +21,32 @@ function makeError(error) {
 }
 
 function createUnit(id, loc, type, user) {
-	return {
+	var unit = {
 		id: id,
 		loc: loc,
 		type: type,
 		user: user,
 		properties: unitTypes[type]
 	};
+	if (!deploymentPhaseActive) {
+		unit.deployTime = parseInt(unit.properties["Turns to Deploy"]);
+	} else {
+		unit.deployTime = 0;
+	}
+	return unit;
 }
 
 function restrictMapView(mapJSON, user) {
 	var units = [];
 
 	for (var unit of mapJSON.units) {
-		if (unit.user == user) {
+		if (unit.user == user && unit.deployTime == 0) {
 			units.push(unit);
 			var range = unit.properties["Vision"]*1000;
 			for (var unit2 of mapJSON.units) {
 				var [unit1x, unit1y] = unit.loc;
 				var [unit2x, unit2y] = unit2.loc;
-				if (Math.hypot(unit1x-unit2x, unit1y-unit2y) <= range) {
+				if (Math.hypot(unit1x-unit2x, unit1y-unit2y) <= range && unit2.deployTime == 0) {
 					units.push(unit2);
 				}
 			}
@@ -141,7 +147,7 @@ function handleSync(reqBody, mapJSON) {
 	return response;
 }
 
-function advanceTurnTimer(offset) {
+function advanceTurnTimer(offset, units) {
 	var previousUser;
 
 	if (offset === undefined) {
@@ -149,6 +155,12 @@ function advanceTurnTimer(offset) {
 	}
 	var usersCount = users.length;
 	var nextUser = getNextTurnUser();
+
+	// for (var unit of units) {
+	// 	if (unit.user == nextUser && deployTime > 0) {
+	// 		deployTime--;
+	// 	}
+	// }
 
 	var nextUserIndex = users.indexOf(nextUser);
 
@@ -162,12 +174,12 @@ function advanceTurnTimer(offset) {
 	}
 }
 
-function checkForMissingUsers() {
+function checkForMissingUsers(units) {
 	if (!deploymentPhaseActive) {
 		var t = (new Date()).getTime();
 		var u = getNextTurnUser();
 		if (turnChangeTime[u] + 2000 < t){
-			advanceTurnTimer(-2000);
+			advanceTurnTimer(-2000, units);
 		}
 	}
 }
@@ -191,7 +203,7 @@ function handleTurnChange(reqBody, mapJSON) {
 	var isCorrectTurn = reqBody.username == nextUser;
 	if (isCorrectTurn) {
 		var d = new Date();
-		advanceTurnTimer();
+		advanceTurnTimer(mapJSON.units);
 		var changes = reqBody.changes;
 		for (var change of changes) {
 			switch (change.type) {

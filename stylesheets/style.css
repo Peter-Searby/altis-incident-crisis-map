@@ -28,6 +28,10 @@ body {
 	width: auto;
 }
 
+#deleteUnitButton {
+	width: auto;
+}
+
 .ol-button i {
 	color: inherit;
 }

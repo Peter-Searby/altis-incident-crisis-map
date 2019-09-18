@@ -89,7 +89,7 @@ function unitStyleGenerator(type, user) {
 // Classes
 
 class Unit {
-	constructor(loc, id, type, user, properties) {
+	constructor(loc, id, type, user, properties, deployTime) {
 		this.feature = new Feature(new Point(loc));
 		this.feature.setId(id);
 		this.feature.setStyle(unitStyleGenerator(type, user));
@@ -101,6 +101,7 @@ class Unit {
 		this.display();
 		this.moveFeature = null;
 		this.seen = false;
+		this.deployTime = deployTime;
 	}
 
 	toRaw() {
@@ -455,6 +456,20 @@ function displayTooltip(units, pixel) {
 		<td style="font-style: italic">${unit.user}</td>
 		</tr>
 		`;
+
+		if (username == "admin" && unit.deployTime > 0) {
+			var s;
+			if (unit.deployTime == 1) {
+				s = "";
+			} else {
+				s = "s";
+			}
+			tooltipTable.innerHTML += `
+			<tr>
+				<td><b>Deploys in ${unit.deployTime} turn${s}</b></td>
+			</tr>
+			`
+		}
 		for (var prop in unit.properties) {
 			tooltipTable.innerHTML += `
 			<tr class="singleUnit">
@@ -546,7 +561,7 @@ function roundLocation(loc) {
 	return [Math.round(loc[0]/1000)*1000, Math.round(loc[1]/1000)*1000];
 }
 
-function addUnit(loc, id, type, user, properties) {
+function addUnit(loc, id, type, user, properties, deployTime) {
 	var unit;
 	var originalUnit = getUnitById(id);
 
@@ -572,7 +587,7 @@ function addUnit(loc, id, type, user, properties) {
 		unit = originalUnit;
 		unit.loc = loc;
 	} else {
-		unit = new Unit(loc, id, type, user, properties);
+		unit = new Unit(loc, id, type, user, properties, deployTime);
 		units.push(unit);
 	}
 	unit.seen = true;
@@ -767,7 +782,7 @@ function handleResponse() {
 				unit.seen = false;
 			}
 			for (var rawUnit of mapJSON.units) {
-				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.user, rawUnit.properties);
+				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.user, rawUnit.properties, rawUnit.deployTime);
 			}
 
 			for (var unit of units) {
