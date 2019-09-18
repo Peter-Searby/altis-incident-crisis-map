@@ -84,6 +84,7 @@ function handleSync(reqBody, mapJSON) {
 
 					break;
 				case "move":
+					changeOccured();
 					var id = change.unitId;
 					var newLocation = change.newLocation;
 					move: {
@@ -110,10 +111,8 @@ function handleSync(reqBody, mapJSON) {
 					break;
 				case "startTurnChanging":
 					deploymentPhaseActive = false;
-					turnChangeTime = {
-						[users[0]]: (new Date()).getTime()+settings.turnTime,
-						[users[1]]: (new Date()).getTime()+settings.turnTime*2
-					};
+					turnChangeTime[users[0]] = (new Date()).getTime() + settings.turnTime;
+					turnChangeTime[users[1]] = (new Date()).getTime() + settings.turnTime * 2;
 					break;
 				default:
 					console.log(`Unusual change requested: ${change.type}`);
@@ -137,7 +136,7 @@ function handleSync(reqBody, mapJSON) {
 			response.isCorrectTurn = getNextTurnUser() == reqBody.username;
 		}
 
-		// console.log(`time: ${(new Date()).getTime()}, test1: ${turnChangeTime.test1}, test2: ${turnChangeTime.test2}`)
+		// console.log(`time: ${(new Date()).getTime()}, Blufor: ${turnChangeTime[users[0]]}, Opfor: ${turnChangeTime[users[1]]}`)
 
 		fs.writeFileSync('data/map.json', mapRaw);
 	} else {
@@ -156,21 +155,24 @@ function advanceTurnTimer(offset, units) {
 	var usersCount = users.length;
 	var nextUser = getNextTurnUser();
 
-	// for (var unit of units) {
-	// 	if (unit.user == nextUser && deployTime > 0) {
-	// 		deployTime--;
-	// 	}
-	// }
+	for (var unit of units) {
+		if (unit.user == nextUser && unit.deployTime > 0) {
+			unit.deployTime--;
+			if (unit.deployTime == 0) {
+				anyChanges[nextUser] = true;
+			}
+		}
+	}
 
 	var nextUserIndex = users.indexOf(nextUser);
 
 	var i = (nextUserIndex+1) % usersCount;
-	turnChangeTime[users[i]] = (new Date()).getTime()+settings.turnTime + offset;
+	turnChangeTime[users[i]] = (new Date()).getTime()+parseInt(settings.turnTime) + offset;
 
 	while (i != nextUserIndex) {
 		previousUser = users[i];
 		i = (i+1) % usersCount;
-		turnChangeTime[users[i]] = turnChangeTime[previousUser]+settings.turnTime;
+		turnChangeTime[users[i]] = turnChangeTime[previousUser]+parseInt(settings.turnTime);
 	}
 }
 
@@ -203,7 +205,7 @@ function handleTurnChange(reqBody, mapJSON) {
 	var isCorrectTurn = reqBody.username == nextUser;
 	if (isCorrectTurn) {
 		var d = new Date();
-		advanceTurnTimer(mapJSON.units);
+		advanceTurnTimer(0, mapJSON.units);
 		var changes = reqBody.changes;
 		for (var change of changes) {
 			switch (change.type) {

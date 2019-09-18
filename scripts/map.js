@@ -31,7 +31,7 @@ var fogFeature;
 
 var selectedUnit;
 
-var nextTurnChange, isUsersTurn, lastClick, changes, started, syncNeedsRestarting;
+var nextTurnChange, isUsersTurn, lastClick, changes, started, syncNeedsRestarting, justStarted;
 var mapMinX, mapMinY, mapMaxX, mapMaxY;
 var units, unitTypes, usersList;
 var tooltipLocation;
@@ -586,6 +586,7 @@ function addUnit(loc, id, type, user, properties, deployTime) {
 	if (originalUnit != null) {
 		unit = originalUnit;
 		unit.loc = loc;
+		unit.deployTime = deployTime
 	} else {
 		unit = new Unit(loc, id, type, user, properties, deployTime);
 		units.push(unit);
@@ -804,7 +805,8 @@ function handleResponse() {
 						repeatSync = setInterval(sync, 1000);
 					}
 				}
-				if (responseJSON.anyChanges) {
+				if (responseJSON.anyChanges || justStarted) {
+					justStarted = false;
 					onUnitsChange();
 				}
 			}
@@ -869,6 +871,7 @@ function endTurnEarly() {
 }
 
 function start() {
+	justStarted = true;
 	sync();
 
 	if (username == "admin") {
