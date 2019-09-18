@@ -212,6 +212,13 @@ var TooltipControl = (function (Control) {
 
 // Map setup
 
+
+// Map bounds
+mapMinX = 1000000;
+mapMinY = 3460000;
+mapMaxX = 4000000;
+mapMaxY = 7200000;
+
 unitSource = new VectorSource();
 movesSource = new VectorSource();
 moveCircleSource = new VectorSource();
@@ -227,7 +234,8 @@ map = new Map({
 		new TileLayer({
 			source: new OSM({
 				url: 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png'
-			})
+			}),
+			extent: [mapMinX, mapMinY, mapMaxX, mapMaxY]
 		}),
 		new VectorLayer({
 			source: moveCircleSource
@@ -246,7 +254,7 @@ map = new Map({
 	view: new View({
 		center: [ 2807000, 4852600 ],
 		zoom: 11,
-		minZoom: 6,
+		minZoom: 5,
 		maxZoom: 14
 	}),
 	keyboardEventTarget: document
@@ -279,13 +287,6 @@ fogSource.addFeature(fogFeature);
 
 nextTurnChange = null;
 isUsersTurn = false;
-
-
-// Map bounds
-mapMinX = 0;
-mapMinY = 0;
-mapMaxX = 5000000;
-mapMaxY = 6000000;
 
 
 // Data stuff
@@ -687,7 +688,7 @@ function updateZoom() {
 	} else {
 		gridWidth = 150000;
 	}
-	setGraticuleWidth((Math.exp(zoom-5)-1)/20000);
+	setGraticuleWidth((Math.exp(zoom-4)-1)/20000);
 	var unitGroups = new Object();
 	unitSource.clear();
 	for (var unit of units) {
