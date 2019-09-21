@@ -443,8 +443,7 @@ function onUnitsChange() {
 }
 
 
-function getMapPointType(coord) {
-	var pixel = map.getPixelFromCoordinate(coord);
+function getMapPointType(pixel) {
 	return map.forEachLayerAtPixel(pixel, function(layer, colour) {
 		if (layer.getZIndex() == 0) {
 			var d = distance(colour, SEA_COLOUR);
@@ -745,6 +744,31 @@ function updateZoom() {
 	}
 }
 
+function validGroundBetween(startLoc, endLoc) {
+	var ground;
+
+	startLoc = map.getPixelFromCoordinate(startLoc);
+	endLoc = map.getPixelFromCoordinate(endLoc);
+
+	function getSegmentOfLength(p1, p2, l) {
+		var totalLength = distance(p1, p2);
+		return [(p2[0]-p1[0])*l/totalLength, (p2[1]-p1[1])*l/totalLength]
+	}
+
+	var segment = getSegmentOfLength(startLoc, endLoc, 1);
+	var point = startLoc;
+	while (distance(point, startLoc) < distance(endLoc, startLoc)) {
+		ground = getMapPointType(point);
+
+		if ((ground==SEA && 'Land'==selectedUnit.properties["Domain"]) ||
+		(ground==LAND && 'Sea'==selectedUnit.properties["Domain"])) {
+			return false;
+		}
+		point = [point[0]+segment[0], point[1]+segment[1]];
+	}
+	return true;
+}
+
 
 function rightClick(e) {
 	e.preventDefault();
@@ -762,9 +786,7 @@ function rightClick(e) {
 				loc[1] - selectedUnit.loc[1]
 			) <= parseInt(selectedUnit.properties["Speed"])*1000;
 
-			var ground = getMapPointType(loc);
-			var validGround = (ground==SEA && ['Sea', 'Air'].includes(selectedUnit.properties["Domain"])) ||
-				(ground==LAND && ['Land', 'Air'].includes(selectedUnit.properties["Domain"]));
+			var validGround = validGroundBetween(selectedUnit.loc, loc);
 
 			if (inRange && selectedUnit.user == username && validGround) {
 				allowed = true;
