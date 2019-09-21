@@ -367,6 +367,8 @@ map.addControl(turnManager);
 
 
 document.getElementById('map').oncontextmenu = rightClick;
+document.addEventListener('keydown', keyDownEvent);
+document.addEventListener('keyup', keyUpEvent);
 
 map.setSize([width, height*0.98]);
 map.on('postcompose', function(event) {map.render()});
@@ -661,8 +663,9 @@ function moveCommand(unit, loc) {
 	}
 	if (unit.moveFeature) {
 		var geo = unit.moveFeature.getGeometry();
-		unit.moveDistance += distance(geo.getLastCoordinate(), loc);
-		if (inRange(unit.moveDistance)) {
+		var d = distance(geo.getLastCoordinate(), loc);
+		if (inRange(unit.moveDistance+d)) {
+			unit.moveDistance+=d;
 			geo.appendCoordinate(loc);
 			return true;
 		}
@@ -677,6 +680,8 @@ function moveCommand(unit, loc) {
 
 			unit.moveFeature = f;
 			return true;
+		} else {
+			unit.moveDistance = 0;
 		}
 	}
 	return false;
@@ -687,8 +692,8 @@ function removeMove(unit) {
 		var geo = unit.moveFeature.getGeometry();
 		var coords = geo.getCoordinates();
 		if (coords.length >= 2) {
-			unit.moveDistance -= distance(coord[coord.length-1], coord[coord.length-2]);
-			geo.setCoordinates(coords.slice(0, coords.length-2))
+			unit.moveDistance -= distance(coords[coords.length-1], coords[coords.length-2]);
+			geo.setCoordinates(coords.slice(0, coords.length-1))
 		}
 	}
 }
@@ -851,6 +856,22 @@ function rightClick(e) {
 			displayRightTooltip([e.clientX, e.clientY]);
 		}
 	}
+}
+
+function keyDownEvent(event) {
+	switch (event.code) {
+		case 'Backspace':
+			if (selectedUnit != null && selectedUnit.user == username) {
+				removeMove(selectedUnit);
+			}
+			break;
+		default:
+			return;
+	}
+}
+
+function keyUpEvent(event) {
+
 }
 
 function getUnitById(id) {
