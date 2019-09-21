@@ -19,6 +19,9 @@ import Overlay from 'ol-ext/control/Overlay.js';
 import Notification from 'ol-ext/control/Notification.js';
 import convexHull from 'ol-ext/geom/ConvexHull.js';
 const jsts = require('jsts');
+const SEA_COLOUR = [182, 210, 236];
+const SEA = 1;
+const LAND = 2;
 
 
 // OpenLayers
@@ -51,6 +54,18 @@ var width = window.innerWidth
 var height = window.innerHeight
 || document.documentElement.clientHeight
 || document.body.clientHeight;
+
+function distance(vector1, vector2) {
+	var mainVector = vector1;
+	if (vector1.length > vector2.length) {
+		mainVector = vector2;
+	}
+	var total = 0;
+	for (var i in mainVector) {
+		total += (vector1[i]-vector2[i]) ** 2;
+	}
+	return Math.sqrt(total);
+}
 
 
 // Styles
@@ -235,19 +250,24 @@ map = new Map({
 			source: new OSM({
 				url: 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png'
 			}),
-			extent: [mapMinX, mapMinY, mapMaxX, mapMaxY]
+			extent: [mapMinX, mapMinY, mapMaxX, mapMaxY],
+			zIndex: 0
 		}),
 		new VectorLayer({
-			source: moveCircleSource
+			source: moveCircleSource,
+			zIndex: 1
 		}),
 		new VectorLayer({
-			source: movesSource
+			source: movesSource,
+			zIndex: 1
 		}),
 		new VectorLayer({
-			source:fogSource
+			source:fogSource,
+			zIndex: 1
 		}),
 		new VectorLayer({
-			source: unitSource
+			source: unitSource,
+			zIndex: 1
 		})
 	],
 	target: 'map',
@@ -420,6 +440,21 @@ function onUnitsChange() {
 	}
 
 	fogFeature.setGeometry(new Polygon([pointsOfBounds, ...cutoutsMerged]));
+}
+
+
+function getMapPointType(coord) {
+	var pixel = map.getPixelFromCoordinate(coord);
+	return map.forEachLayerAtPixel(pixel, function(layer, colour) {
+		if (layer.getZIndex() == 0) {
+			var d = distance(colour, SEA_COLOUR);
+			if (d < 10) {
+				return SEA;
+			} else {
+				return LAND;
+			}
+		}
+	});
 }
 
 function displayMoveCircle(unit) {
@@ -727,7 +762,11 @@ function rightClick(e) {
 				loc[1] - selectedUnit.loc[1]
 			) <= parseInt(selectedUnit.properties["Speed"])*1000;
 
-			if (inRange && selectedUnit.user == username) {
+			var ground = getMapPointType(loc);
+			var validGround = (ground==SEA && ['Sea', 'Air'].includes(selectedUnit.properties["Domain"])) ||
+				(ground==LAND && ['Land', 'Air'].includes(selectedUnit.properties["Domain"]));
+
+			if (inRange && selectedUnit.user == username && validGround) {
 				allowed = true;
 				moveCommand(selectedUnit, loc);
 			}
@@ -736,6 +775,9 @@ function rightClick(e) {
 			}
 			if (selectedUnit.user != username) {
 				notification.show(`This is not your unit`);
+			}
+			if (!validGround) {
+				notification.show("This unit cannot move there")
 			}
 		}
 		if (allowed) {

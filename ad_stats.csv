@@ -1,0 +1,7 @@
+Airborne Infantry Battalion,Para,8,n/a,2,10,15,500,Soldiers,Shock,Air
+Transport Ship,TS,25,n/a,6,2,10,1,,Regular,Sea
+Transport Aircraft Flight,TA FLT,400,1200,2,2,5,4,Aircrafts,Regular,Air
+Transport Company,TRAN COY,30,n/a,3,2,5,40,trucks,Regular,Land
+Transport Helicopter Squadron,TH SQN,90,450,6,2,5,12,Helicopters,Regular,Air
+Carrier,CV,30,n/a,6,3,40,1,,Regular,Sea
+Marine Infantry Battalion,Marines,8,n/a,2,10,15,600,Marines,Shock,Land
