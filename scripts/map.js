@@ -60,7 +60,7 @@ function distance(vector1, vector2) {
 	if (vector1.length > vector2.length) {
 		mainVector = vector2;
 	}
-	var total = 0;
+	var total = 0.0;
 	for (var i in mainVector) {
 		total += (vector1[i]-vector2[i]) ** 2;
 	}
@@ -129,7 +129,7 @@ class Unit {
 		this.moveFeature = null;
 		this.seen = false;
 		this.deployTime = deployTime;
-		this.moveDistance = 0;
+		this.moveDistance = 0.0;
 		this.visualLoc = roundLocation(loc);
 	}
 
@@ -148,6 +148,7 @@ class Unit {
 	}
 
 	updateZoom(gridWidth){
+		this.feature.setGeometry(new Point(this.loc));
 		this.visualLoc = roundLocationBy(this.loc, gridWidth)
 	}
 
