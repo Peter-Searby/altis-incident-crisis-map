@@ -709,9 +709,9 @@ function createUnit(loc, type, user) {
 function getUnitsAt(pixel) {
 	var foundUnits = [];
 	for (var unit of units) {
-		var unitPixel = map.getPixelFromCoordinate(unit.visualLoc);
+		var unitPixel = map.getPixelFromCoordinate(unit.loc);
 		var distance = Math.hypot(unitPixel[0]-pixel[0]-15*unitPixel[0]/width, unitPixel[1] - pixel[1]-4*unitPixel[1]/height);
-		if (distance<22) {
+		if (distance<40) {
 			foundUnits.push(unit);
 		}
 	}
@@ -747,22 +747,22 @@ function updateZoom() {
 
 	var zoom = map.getView().getZoom();
 
-	if (zoom > 12) {
+	if (zoom >= 13) {
 		gridWidth = 1000;
-	} else if (zoom > 11) {
+	} else if (zoom >= 12) {
 		gridWidth = 2000;
-	} else if (zoom > 10) {
-		gridWidth = 5000;
-	} else if (zoom > 9) {
-		gridWidth = 10000;
-	} else if (zoom > 8) {
-		gridWidth = 20000;
-	} else if (zoom > 7) {
+	} else if (zoom >= 11) {
+		gridWidth = 6000;
+	} else if (zoom >= 10) {
+		gridWidth = 12000;
+	} else if (zoom >= 9) {
 		gridWidth = 30000;
-	} else if (zoom > 6) {
-		gridWidth = 50000;
+	} else if (zoom >= 8) {
+		gridWidth = 40000;
+	} else if (zoom >= 7) {
+		gridWidth = 80000;
 	} else {
-		gridWidth = 150000;
+		gridWidth = 200000;
 	}
 	setGraticuleWidth((Math.exp(zoom-4)-1)/20000);
 	var unitGroups = new Object();

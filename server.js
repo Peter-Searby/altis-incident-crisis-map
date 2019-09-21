@@ -229,7 +229,7 @@ function handleTurnChange(reqBody, mapJSON) {
 		}
 
 		var mapRaw = JSON.stringify(mapJSON);
-		checkForMissingUsers();
+		checkForMissingUsers(mapJSON.units);
 		response = {
 			nextTurnChange: turnChangeTime[reqBody.username],
 			turnTime: isCorrectTurn,
