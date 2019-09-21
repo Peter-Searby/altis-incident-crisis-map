@@ -46,6 +46,11 @@ body {
 	top: 1em;
 }
 
+.resetMap {
+	left: 1em;
+	bottom: 50%
+}
+
 .turn-change {
 	position: absolute;
 	top: 0%;

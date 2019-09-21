@@ -29,7 +29,7 @@ var map;
 var unitSource, movesSource, moveCircleSource, fogSource;
 var turnManager;
 var tooltipElement, graticule;
-var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton, deploymentFinishButton;
+var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton, deploymentFinishButton, resetMapButton;
 var fogFeature;
 
 var selectedUnit;
@@ -1021,8 +1021,18 @@ function start() {
 			}
 		});
 
+		resetMapButton = new Button({
+			html: '<i class="material-icons">delete_forever</i>',
+			className: "resetMap",
+			title: "Reset map",
+			handleClick: function() {
+				changes.push({type: "reset"});
+			}
+		});
+
 		map.addControl(turnTimeButton);
 		map.addControl(deploymentFinishButton);
+		map.addControl(resetMapButton);
 	}
 
 	turnTimeUpdater = setInterval(updateTurnTime, 500);

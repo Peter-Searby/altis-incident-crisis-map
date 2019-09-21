@@ -114,6 +114,14 @@ function handleSync(reqBody, mapJSON) {
 					turnChangeTime[users[0]] = (new Date()).getTime() + settings.turnTime;
 					turnChangeTime[users[1]] = (new Date()).getTime() + settings.turnTime * 2;
 					break;
+				case "reset":
+					fs.copyFile('data/map.json', 'data/backup-map.json', (err) => {
+						if (err) throw err;
+					});
+					defaultMap = fs.readFileSync('default-map.json');
+					defaultMapJSON = JSON.parse(defaultMap);
+					mapJSON = defaultMapJSON;
+					break;
 				default:
 					console.log(`Unusual change requested: ${change.type}`);
 			}
@@ -306,13 +314,14 @@ csv
   .on('data', row => addUnitType(row));
 
 
-defaultMap = fs.readFileSync('default-map.json');
-
 if (!fs.existsSync("data")) {
-	fs.mkdirSync("data");
+  fs.mkdirSync("data");
 }
 
-fs.writeFileSync('data/map.json', defaultMap);
+if (!fs.existsSync("data/map.json")) {
+	defaultMap = fs.readFileSync('default-map.json');
+	fs.writeFileSync('data/map.json', defaultMap);
+}
 
 app.use(express.static('dist'));
 app.use(bodyParser.json());
@@ -321,7 +330,7 @@ app.use('/res', express.static('res'));
 
 app.post('/server.js', function (req, res, next) {
 	var rawdata = fs.readFileSync('data/map.json');
-	var mapJSON = JSON.parse(fs.readFileSync('data/map.json'));
+	var mapJSON = JSON.parse(rawdata);
 	var username = req.body.username;
 	if (logins[username] == req.body.password) {
 		var response;
