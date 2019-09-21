@@ -121,7 +121,6 @@ class Unit {
 		this.feature = new Feature(new Point(loc));
 		this.feature.setId(id);
 		this.feature.setStyle(unitStyleGenerator(type, user));
-		// this.feature.setStyle(pointStyle);
 		this.loc = loc;
 		this.type = type;
 		this.user = user;
@@ -131,6 +130,7 @@ class Unit {
 		this.seen = false;
 		this.deployTime = deployTime;
 		this.moveDistance = 0;
+		this.visualLoc = roundLocation(loc);
 	}
 
 	toRaw() {
@@ -147,15 +147,8 @@ class Unit {
 		return this.feature.getId();
 	}
 
-	get visualLoc() {
-		return this.feature.getGeometry().getCoordinates();
-	}
-
 	updateZoom(gridWidth){
-		this.feature.getGeometry().setCoordinates([
-			Math.round(this.loc[0]/gridWidth)*gridWidth,
-			Math.round(this.loc[1]/gridWidth)*gridWidth]
-		);
+		this.visualLoc = roundLocationBy(this.loc, gridWidth)
 	}
 
 	hide() {
@@ -276,7 +269,7 @@ map = new Map({
 			style: new Style({
 				stroke: new Stroke({
 					width: 5,
-					color: [170, 200, 255]
+					color: [150, 180, 240]
 				})
 			}),
 			zIndex: 1
@@ -614,6 +607,10 @@ function updateTooltip() {
 
 function roundLocation(loc) {
 	return [Math.round(loc[0]/1000)*1000, Math.round(loc[1]/1000)*1000];
+}
+
+function roundLocationBy(loc, amount) {
+	return [Math.round(loc[0]/amount)*amount, Math.round(loc[1]/amount)*amount];
 }
 
 function addUnit(loc, id, type, user, properties, deployTime) {
