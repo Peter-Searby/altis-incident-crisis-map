@@ -36,7 +36,7 @@ var selectedUnit;
 
 var nextTurnChange, isUsersTurn, lastClick, changes, started, syncNeedsRestarting, justStarted;
 var mapMinX, mapMinY, mapMaxX, mapMaxY;
-var units, unitTypes, usersList;
+var units, unitTypes, usersList, firsts;
 var tooltipLocation;
 var url;
 
@@ -90,6 +90,19 @@ var userColours = [
 	[255, 0, 0]
 ];
 
+var isThisFirstOfEvent = {
+	'move': true
+}
+
+function isFirst(e) {
+	if (isThisFirstOfEvent[e]) {
+		isThisFirstOfEvent[e] = false;
+		return true;
+	} else {
+		return false;
+	}
+}
+
 function unitStyleGenerator(type, user) {
 	return new Style({
 		image: new Icon({
@@ -117,6 +130,7 @@ class Unit {
 		this.moveFeature = null;
 		this.seen = false;
 		this.deployTime = deployTime;
+		this.moveDistance = 0;
 	}
 
 	toRaw() {
@@ -259,6 +273,12 @@ map = new Map({
 		}),
 		new VectorLayer({
 			source: movesSource,
+			style: new Style({
+				stroke: new Stroke({
+					width: 5,
+					color: [170, 200, 255]
+				})
+			}),
 			zIndex: 1
 		}),
 		new VectorLayer({
@@ -638,17 +658,41 @@ function moveUnit(unit, loc) {
 }
 
 function moveCommand(unit, loc) {
-	if (unit.moveFeature) {
-		movesSource.removeFeature(unit.moveFeature);
+	function inRange(d) {
+		return d <= parseInt(unit.properties["Speed"])*1000;
 	}
+	if (unit.moveFeature) {
+		var geo = unit.moveFeature.getGeometry();
+		unit.moveDistance += distance(geo.getLastCoordinate(), loc);
+		if (inRange(unit.moveDistance)) {
+			geo.appendCoordinate(loc);
+			return true;
+		}
+	} else {
+		unit.moveDistance = distance(unit.loc, loc);
+		if (inRange(unit.moveDistance)) {
+			var f = new Feature(new LineString([
+				unit.loc,
+				loc
+			]));
+			movesSource.addFeature(f);
 
-	var f = new Feature(new LineString([
-		unit.loc,
-		loc
-	]));
-	movesSource.addFeature(f);
+			unit.moveFeature = f;
+			return true;
+		}
+	}
+	return false;
+}
 
-	unit.moveFeature = f;
+function removeMove(unit) {
+	if (unit.moveFeature) {
+		var geo = unit.moveFeature.getGeometry();
+		var coords = geo.getCoordinates();
+		if (coords.length >= 2) {
+			unit.moveDistance -= distance(coord[coord.length-1], coord[coord.length-2]);
+			geo.setCoordinates(coords.slice(0, coords.length-2))
+		}
+	}
 }
 
 function getUnitFromFeature(feature) {
@@ -781,19 +825,17 @@ function rightClick(e) {
 			hideTooltip();
 			allowed = true;
 		} else {
-			var inRange = Math.hypot(
-				loc[0] - selectedUnit.loc[0],
-				loc[1] - selectedUnit.loc[1]
-			) <= parseInt(selectedUnit.properties["Speed"])*1000;
 
 			var validGround = validGroundBetween(selectedUnit.loc, loc);
 
-			if (inRange && selectedUnit.user == username && validGround) {
-				allowed = true;
-				moveCommand(selectedUnit, loc);
-			}
-			if (!inRange) {
-				notification.show(`Units can only travel as far as their speed (km) each turn`);
+			if (selectedUnit.user == username && validGround) {
+				allowed = moveCommand(selectedUnit, loc);
+				if (isFirst('move')) {
+					notification.show("You can continue to add moves with a right click. <br/>To remove the last move press Backspace", 5000);
+				}
+				if (!allowed) {
+					notification.show(`Units can only travel as far as their speed (km) each turn`);
+				}
 			}
 			if (selectedUnit.user != username) {
 				notification.show(`This is not your unit`);
