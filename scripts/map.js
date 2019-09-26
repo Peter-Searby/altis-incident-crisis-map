@@ -32,11 +32,11 @@ var tooltipElement, graticule;
 var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton, deploymentFinishButton, resetMapButton;
 var fogFeature;
 
-var selectedUnit;
+var selectedUnit, attackingUnit;
 
-var nextTurnChange, isUsersTurn, lastClick, changes, started, syncNeedsRestarting, justStarted;
+var nextTurnChange, isUsersTurn, lastClick, changes, started, syncNeedsRestarting, justStarted, attacking, gameStarted;
 var mapMinX, mapMinY, mapMaxX, mapMaxY;
-var units, unitTypes, usersList, firsts;
+var units, unitTypes, usersList;
 var tooltipLocation;
 var url;
 
@@ -91,7 +91,8 @@ var userColours = [
 ];
 
 var isThisFirstOfEvent = {
-	'move': true
+	'move': true,
+	'attack': true
 }
 
 function isFirst(e) {
@@ -226,6 +227,12 @@ var TooltipControl = (function (Control) {
 			var unitId = selectedUnit.id;
 			changes.push({type:"delete", unitId: unitId});
 			hideTooltip();
+		} else if (clickedElement.id == "attackButton") {
+			startAttacking();
+			hideTooltip();
+			if (isFirst('attack')) {
+				notification.show("To choose a unit to attack, left click the desired unit");
+			}
 		}
 	};
 
@@ -329,12 +336,19 @@ units = [];
 
 url = "test.json";
 started = false;
+attacking = false;
 
 tooltipLocation = null;
 selectedUnit = null;
 
 lastClick = null;
 changes = [];
+
+
+function startAttacking() {
+	attacking = true;
+	attackingUnit = selectedUnit;
+}
 
 
 function getTurnManagerContent() {
@@ -481,6 +495,7 @@ function displayMoveCircle(unit) {
 	}
 }
 
+// Unit tooltip
 function displayTooltip(units, pixel) {
 	tooltipElement.style.cssText = `
 	position: absolute;
@@ -533,6 +548,12 @@ function displayTooltip(units, pixel) {
 			tooltipTable.innerHTML += `
 			<tr>
 				<td/><td><button type="button" id="deleteUnitButton"/>Delete</td>
+			</tr>
+			`
+		} else if (username == selectedUnit.user){
+			tooltipTable.innerHTML += `
+			<tr>
+				<td/><td><button type="button" id="attackButton"/>Attack</td>
 			</tr>
 			`
 		}
@@ -723,12 +744,40 @@ function getUnitsAt(pixel) {
 	return foundUnits;
 }
 
+function cancelAttack(message) {
+	notification.show(message);
+	selectedUnit = attackingUnit;
+	displayTooltip([selectedUnit], map.getPixelFromCoordinate(selectedUnit.loc));
+}
+
+
+function attemptAttack(defendingUnit) {
+	if (attackingUnit.user == username && defendingUnit.user != username) {
+		if (distance(attackingUnit.loc, defendingUnit.loc) <= attackingUnit.properties["Attack Range"] * 1000) {
+			// Make attack
+			changes.push({type: "attack", attackerId: attackingUnit.id, defenderId: defendingUnit.id});
+			attacking = false;
+		} else {
+			cancelAttack("Defending unit out of range")
+		}
+	} else {
+		cancelAttack("You cannot attack your own unit");
+	}
+}
+
 map.on('click', function (event) {
 	var unitsUnder = getUnitsAt(event.pixel);
 	if (unitsUnder.length != 0) {
-		displayTooltip(unitsUnder, event.pixel);
-		lastClick = event.pixel;
-
+		if (attacking) {
+			if (unitsUnder.length == 1) {
+				attemptAttack(unitsUnder[0]);
+			} else {
+				notification.show("Too many units under mouse. Zoom in for greater precision");
+			}
+		} else {
+			displayTooltip(unitsUnder, event.pixel);
+			lastClick = event.pixel;
+		}
 	} else {
 		hideTooltip();
 	}
@@ -903,8 +952,13 @@ function handleResponse() {
 				login();
 			}
 		} else {
+			// Normal response
+
 			var mapJSON = responseJSON.mapState;
 			unitSource.clear();
+
+
+			// Parse units
 			for (var unit of units) {
 				unit.seen = false;
 			}
@@ -917,7 +971,9 @@ function handleResponse() {
 					units.splice(units.indexOf(unit), 1);
 				}
 			}
+
 			if (username != "admin") {
+				// Handle user specific syncing
 				nextTurnChange = responseJSON.nextTurnChange;
 				isUsersTurn = responseJSON.isCorrectTurn;
 				clearTimeout(turnTimer);
@@ -935,7 +991,18 @@ function handleResponse() {
 					justStarted = false;
 					onUnitsChange();
 				}
+			} else {
+				// Handle admin specific syncing
+				if (gameStarted != mapJSON.gameStarted) {
+					if (mapJSON.gameStarted) {
+						map.removeControl(deploymentFinishButton);
+					} else {
+						map.addControl(deploymentFinishButton);
+					}
+				}
 			}
+
+			gameStarted = mapJSON.gameStarted;
 		}
 	}
 }
@@ -1031,9 +1098,12 @@ function start() {
 		});
 
 		map.addControl(turnTimeButton);
-		map.addControl(deploymentFinishButton);
 		map.addControl(resetMapButton);
+		gameStarted = true;
+	} else {
+		gameStarted = false;
 	}
+
 
 	turnTimeUpdater = setInterval(updateTurnTime, 500);
 	repeatSync = setInterval(sync, 1000);

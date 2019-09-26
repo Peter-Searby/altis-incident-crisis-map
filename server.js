@@ -9,7 +9,7 @@ const PORT = 8000;
 var defaultMap, settings;
 var users, logins, anyChanges, turnChangeTime;
 var unitTypes;
-var deploymentPhaseActive = true;
+var gameStarted;
 
 
 function userAttemptAdminError(command) {
@@ -28,7 +28,7 @@ function createUnit(id, loc, type, user) {
 		user: user,
 		properties: unitTypes[type]
 	};
-	if (!deploymentPhaseActive) {
+	if (gameStarted) {
 		unit.deployTime = parseInt(unit.properties["Turns to Deploy"]);
 	} else {
 		unit.deployTime = 0;
@@ -66,10 +66,17 @@ function getUnitById(units, id) {
 	return null;
 }
 
+function startGame() {
+	gameStarted = true;
+	turnChangeTime[users[0]] = (new Date()).getTime() + settings.turnTime;
+	turnChangeTime[users[1]] = (new Date()).getTime() + settings.turnTime * 2;
+}
+
 function handleSync(reqBody, mapJSON) {
 	var changes = reqBody.changes;
 	if (reqBody.username == "admin" || changes.length==0) {
 		for (var change of changes) {
+			// Admin changes
 			switch (change.type) {
 				case "add":
 					var id;
@@ -110,11 +117,11 @@ function handleSync(reqBody, mapJSON) {
 					settings.turnTime = change.time*1000;
 					break;
 				case "startTurnChanging":
-					deploymentPhaseActive = false;
-					turnChangeTime[users[0]] = (new Date()).getTime() + settings.turnTime;
-					turnChangeTime[users[1]] = (new Date()).getTime() + settings.turnTime * 2;
+					mapJSON.gameStarted = true;
+					startGame();
 					break;
 				case "reset":
+					changeOccured();
 					fs.copyFile('data/map.json', 'data/backup-map.json', (err) => {
 						if (err) throw err;
 					});
@@ -185,7 +192,7 @@ function advanceTurnTimer(offset, units) {
 }
 
 function checkForMissingUsers(units) {
-	if (!deploymentPhaseActive) {
+	if (gameStarted) {
 		var t = (new Date()).getTime();
 		var u = getNextTurnUser();
 		if (turnChangeTime[u] + 2000 < t){
@@ -195,7 +202,7 @@ function checkForMissingUsers(units) {
 }
 
 function getNextTurnUser() {
-	if (deploymentPhaseActive) {
+	if (!gameStarted) {
 		return "";
 	}
 
@@ -216,6 +223,7 @@ function handleTurnChange(reqBody, mapJSON) {
 		advanceTurnTimer(0, mapJSON.units);
 		var changes = reqBody.changes;
 		for (var change of changes) {
+			// User changes
 			switch (change.type) {
 				case "move":
 					changeOccured();
@@ -230,6 +238,12 @@ function handleTurnChange(reqBody, mapJSON) {
 						}
 						console.log(`Invalid move made: id ${id} not found`);
 					}
+					break;
+				case "attack":
+					changeOccured();
+					var attacker = getUnitById(mapJSON.units, change.attackerId);
+					var defender = getUnitById(mapJSON.units, change.defenderId);
+					console.log(`Attack by ${attacker.id} of type ${attacker.type} against ${defender.id} of type ${defender.type}`)
 					break;
 				default:
 					console.log(`Unusual change requested: ${change.type}`);
@@ -318,9 +332,16 @@ if (!fs.existsSync("data")) {
   fs.mkdirSync("data");
 }
 
-if (!fs.existsSync("data/map.json")) {
+if (fs.existsSync("data/map.json")) {
+	gameStarted = JSON.parse(fs.readFileSync('data/map.json')).gameStarted;
+} else {
 	defaultMap = fs.readFileSync('default-map.json');
+	gameStarted = JSON.parse(defaultMap).gameStarted;
 	fs.writeFileSync('data/map.json', defaultMap);
+}
+
+if (gameStarted) {
+	startGame();
 }
 
 app.use(express.static('dist'));

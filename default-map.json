@@ -15,7 +15,8 @@
 				"Pieces per Unit": "800",
 				"Name of Piece": "Soldiers",
 				"Training level":"Regular",
-				"Domain": "Land"
+				"Domain": "Land",
+				"Attack Range": 1
 			},
 			"deployTime": 0
 		},
@@ -34,9 +35,11 @@
 				"Pieces per Unit": "800",
 				"Name of Piece": "Soldiers",
 				"Training level": "Regular",
-				"Domain":"Land"
+				"Domain": "Land",
+				"Attack Range": 1
 			},
 			"deployTime": 0
 		}
-	]
+	],
+	"gameStarted": false
 }
