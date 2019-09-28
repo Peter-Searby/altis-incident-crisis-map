@@ -1,20 +1,20 @@
-Unit Type,Abbreviation,Speed,Range to refuel,Turns to Deploy,Concealment,Vision,Pieces per Unit,Name of Piece,Training level,Domain,Attack Range
-Special Operations Forces Squadron,SOF SQN,9,n/a,1,30,20,60,Operators,Elite,Land,1
+Unit Type,Abbreviation,Speed,Turns to refuel,Turns to Deploy,Concealment,Vision,Pieces per Unit,Name of Piece,Training level,Domain,Attack Range
+Special Operations Forces Squadron,SOF SQN,9,n/a,1,30,20,60,Operators,Elite,Land,2
 Infantry Battalion,INF BTN,6,n/a,3,5,10,800,Soldiers,Regular,Land,1
-Motorised Infantry Battalion,MOT INF BTN,35,n/a,3,2,10,1000,Soldiers,Regular,Land,1
-Mechanised Infantry Battalion,MECH INF BTN,25,n/a,3,2,10,1000,Soldiers,Regular,Land,1
-Surface to Air Missile Battery,SAM BAT,15,n/a,4,4,10,12,SAMs,Regular,Land,1
-Anti-Aircraft Artillery Battery,AAA BAT,15,n/a,4,3,10,12,AAA,Regular,Land,1
-Tank Battalion,TANK BTN,25,n/a,4,0,20,36,Tanks,Regular,Land,1
-Attack Helicopter Squadron,AH SQN,120,600,5,2,30,12,Helicopters,Shock,Air,1
-Jet Fighter Squadron,F SQN,600,1800,2,2,20,12,Fighters,Regular,Air,1
-Stealth Fighter Squadron,SF SQN,600,1800,2,30,20,8,Fighters,Elite,Air,1
-Bomber Flight,B FLT,500,1500,2,2,20,4,Bombers,Regular,Air,1
-Stealth Bomber Flight,SB FLT,500,1500,2,30,20,4,Bombers,Elite,Air,1
-Anti-Ship Aircraft Flight,ASHA FLT,500,1500,2,8,20,4,fighters,Regular,Air,1
-Anti-Submarine Aircraft Flight,ASU FLT,400,1200,2,6,20,4,aircraft,Regular,Air,1
-Cruiser,CA,28,n/a,5,4,45,1,,Regular,Sea,1
-Destroyer,DD,35,n/a,4,5,70,1,,Regular,Sea,1
-Frigate,FF,29,n/a,5,6,60,1,,Regular,Sea,1
-Attack Submarine Nuclear,SSN,30,n/a,2,50,40,1,,Elite,Sea,1
-Attack Submarine Diesel Electric,SS,15,n/a,4,60,30,1,,Elite,Sea,1
+Motorised Infantry Battalion,MOT INF BTN,35,n/a,3,2,10,1000,Soldiers,Regular,Land,2
+Mechanised Infantry Battalion,MECH INF BTN,25,n/a,3,2,10,1000,Soldiers,Regular,Land,3
+Surface to Air Missile Battery,SAM BAT,15,n/a,4,4,10,12,SAMs,Regular,Land,25
+Anti-Aircraft Artillery Battery,AAA BAT,15,n/a,4,3,10,12,AAA,Regular,Land,10
+Tank Battalion,TANK BTN,25,n/a,4,0,20,36,Tanks,Regular,Land,4
+Attack Helicopter Squadron,AH SQN,120,5,5,2,30,12,Helicopters,Shock,Air,8
+Jet Fighter Squadron,F SQN,600,3,2,2,20,12,Fighters,Regular,Air,30
+Stealth Fighter Squadron,SF SQN,600,3,2,30,20,8,Fighters,Elite,Air,30
+Bomber Flight,B FLT,500,3,2,2,20,4,Bombers,Regular,Air,5
+Stealth Bomber Flight,SB FLT,500,3,2,30,20,4,Bombers,Elite,Air,5
+Anti-Ship Aircraft Flight,ASHA FLT,500,3,2,8,20,4,fighters,Regular,Air,20
+Anti-Submarine Aircraft Flight,ASU FLT,400,3,2,6,20,4,aircraft,Regular,Air,2
+Cruiser,CA,28,n/a,5,4,45,1,,Regular,Sea,50
+Destroyer,DD,35,n/a,4,5,70,1,,Regular,Sea,50
+Frigate,FF,29,n/a,5,6,60,1,,Regular,Sea,40
+Attack Submarine Nuclear,SSN,30,n/a,2,50,40,1,,Elite,Sea,15
+Attack Submarine Diesel Electric,SS,15,n/a,4,60,30,1,,Elite,Sea,15

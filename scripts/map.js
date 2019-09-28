@@ -19,6 +19,7 @@ import Overlay from 'ol-ext/control/Overlay.js';
 import Notification from 'ol-ext/control/Notification.js';
 import convexHull from 'ol-ext/geom/ConvexHull.js';
 const jsts = require('jsts');
+const StatsManager = require('./stats').StatsManager;
 const SEA_COLOUR = [182, 210, 236];
 const SEA = 1;
 const LAND = 2;
@@ -36,7 +37,7 @@ var selectedUnit, attackingUnit;
 
 var nextTurnChange, isUsersTurn, lastClick, changes, started, syncNeedsRestarting, justStarted, attacking, gameStarted;
 var mapMinX, mapMinY, mapMaxX, mapMaxY;
-var units, unitTypes, usersList;
+var units, usersList;
 var tooltipLocation;
 var url;
 
@@ -45,6 +46,7 @@ var turnTimer, repeatSync, turnTimeUpdater;
 var username;
 var password;
 
+var statsManager;
 var TooltipControl;
 
 var width = window.innerWidth
@@ -118,20 +120,21 @@ function unitStyleGenerator(type, user) {
 // Classes
 
 class Unit {
-	constructor(loc, id, type, user, properties, deployTime) {
+	constructor(loc, id, type, user, deployTime, hp) {
 		this.feature = new Feature(new Point(loc));
 		this.feature.setId(id);
 		this.feature.setStyle(unitStyleGenerator(type, user));
 		this.loc = loc;
 		this.type = type;
 		this.user = user;
-		this.properties = properties;
+		this.properties = statsManager.getProperties(type);
 		this.display();
 		this.moveFeature = null;
 		this.seen = false;
 		this.deployTime = deployTime;
 		this.moveDistance = 0.0;
 		this.visualLoc = roundLocation(loc);
+		this.hp = hp;
 	}
 
 	toRaw() {
@@ -140,7 +143,9 @@ class Unit {
 			loc: this.loc,
 			type: this.type,
 			user: this.user,
-			properties: this.properties
+			properties: this.properties,
+			deployTime: this.deployTime,
+			hp: this.hp
 		};
 	}
 
@@ -516,7 +521,7 @@ function displayTooltip(units, pixel) {
 		}
 		tooltipTable.innerHTML = `
 		<tr class="tooltipHeader">
-			<th>${unit.type}</th>
+			<th>${unit.type}</th><th>${unit.hp} HP</th>
 		</tr>
 		<tr>
 		<td style="font-style: italic">${unit.user}</td>
@@ -594,7 +599,7 @@ function displayRightTooltip(pixel) {
 	</tr><tr>
 		<td>type:</td><td><select id="typeEntry">
 	`;
-	for (var type of unitTypes) {
+	for (var type of statsManager.getTypes()) {
 		str += `<option value="${type}">${type}</option>`;
 	}
 
@@ -637,7 +642,7 @@ function roundLocationBy(loc, amount) {
 	return [Math.round(loc[0]/amount)*amount, Math.round(loc[1]/amount)*amount];
 }
 
-function addUnit(loc, id, type, user, properties, deployTime) {
+function addUnit(loc, id, type, user, deployTime, hp) {
 	var unit;
 	var originalUnit = getUnitById(id);
 
@@ -651,20 +656,13 @@ function addUnit(loc, id, type, user, properties, deployTime) {
 
 	loc = roundLocation(loc);
 
-	if (type == undefined) {
-		type = defaultUnitType;
-	}
-
-	if (properties == undefined) {
-		properties = defaultUnitProperties;
-	}
-
 	if (originalUnit != null) {
 		unit = originalUnit;
 		unit.loc = loc;
 		unit.deployTime = deployTime
+		unit.hp = hp;
 	} else {
-		unit = new Unit(loc, id, type, user, properties, deployTime);
+		unit = new Unit(loc, id, type, user, deployTime, hp);
 		units.push(unit);
 	}
 	unit.seen = true;
@@ -747,7 +745,16 @@ function getUnitsAt(pixel) {
 function cancelAttack(message) {
 	notification.show(message);
 	selectedUnit = attackingUnit;
+	attacking = false;
 	displayTooltip([selectedUnit], map.getPixelFromCoordinate(selectedUnit.loc));
+}
+
+function deleteAnyOldAttacks(id) {
+	for (var i in changes) {
+		if (changes[i].type == "attack" && changes[i].attackerId == id) {
+			changes.splice(i, 1);
+		}
+	}
 }
 
 
@@ -755,10 +762,11 @@ function attemptAttack(defendingUnit) {
 	if (attackingUnit.user == username && defendingUnit.user != username) {
 		if (distance(attackingUnit.loc, defendingUnit.loc) <= attackingUnit.properties["Attack Range"] * 1000) {
 			// Make attack
+			deleteAnyOldAttacks(attackingUnit.id);
 			changes.push({type: "attack", attackerId: attackingUnit.id, defenderId: defendingUnit.id});
 			attacking = false;
 		} else {
-			cancelAttack("Defending unit out of range")
+			cancelAttack("Defending unit out of range");
 		}
 	} else {
 		cancelAttack("You cannot attack your own unit");
@@ -779,7 +787,11 @@ map.on('click', function (event) {
 			lastClick = event.pixel;
 		}
 	} else {
-		hideTooltip();
+		if (attacking) {
+			cancelAttack("No unit there");
+		} else {
+			hideTooltip();
+		}
 	}
 });
 
@@ -932,15 +944,17 @@ function getUnitById(id) {
 	return null;
 }
 
+function displayFailedAttacks(attacks) {
+	if (attacks.length != 0) {
+		notification.show(attacks.pop(), 500);
+		setTimeout(displayFailedAttacks, 500, attacks)
+	}
+}
+
 function handleResponse() {
 	if (this.readyState == 4 && this.status == 200) {
 		var responseJSON = JSON.parse(this.responseText);
 		var error = responseJSON.error;
-		if (username == "admin"){
-			if (responseJSON.unitTypes) {
-				unitTypes = responseJSON.unitTypes;
-			}
-		}
 		if (responseJSON.usersList) {
 			usersList = responseJSON.usersList;
 		}
@@ -956,6 +970,9 @@ function handleResponse() {
 
 			var mapJSON = responseJSON.mapState;
 			unitSource.clear();
+			if (responseJSON.statsData) {
+				statsManager = new StatsManager(responseJSON.statsData);
+			}
 
 
 			// Parse units
@@ -963,7 +980,7 @@ function handleResponse() {
 				unit.seen = false;
 			}
 			for (var rawUnit of mapJSON.units) {
-				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.user, rawUnit.properties, rawUnit.deployTime);
+				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.user, rawUnit.deployTime, rawUnit.hp);
 			}
 
 			for (var unit of units) {
@@ -987,9 +1004,11 @@ function handleResponse() {
 						repeatSync = setInterval(sync, 1000);
 					}
 				}
-				if (responseJSON.anyChanges || justStarted) {
-					justStarted = false;
+				if (responseJSON.anyChanges) {
 					onUnitsChange();
+				}
+				if (responseJSON.failedAttacks) {
+					displayFailedAttacks(responseJSON.failedAttacks);
 				}
 			} else {
 				// Handle admin specific syncing
@@ -1023,6 +1042,10 @@ function sync() {
 	if (username == "admin") {
 		requestData.changes = changes;
 		changes = [];
+	}
+	if (justStarted) {
+		requestData.firstSync = true;
+		justStarted = false;
 	}
 	xmlhttp.send(JSON.stringify(requestData));
 }
@@ -1064,6 +1087,7 @@ function endTurnEarly() {
 }
 
 function start() {
+	document.title = "Altis Map - "+username
 	justStarted = true;
 	sync();
 

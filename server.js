@@ -3,13 +3,15 @@ const fs = require('fs');
 const bodyParser = require('body-parser');
 const app = express();
 const csv = require('fast-csv');
+const StatsManager = require('./scripts/stats').StatsManager;
 
 const PORT = 8000;
 
 var defaultMap, settings;
 var users, logins, anyChanges, turnChangeTime;
-var unitTypes;
 var gameStarted;
+
+var statsManager = new StatsManager();
 
 
 function userAttemptAdminError(command) {
@@ -20,16 +22,16 @@ function makeError(error) {
 	return {error: error};
 }
 
-function createUnit(id, loc, type, user) {
+function createUnit(id, loc, type, user, hp) {
 	var unit = {
 		id: id,
 		loc: loc,
 		type: type,
 		user: user,
-		properties: unitTypes[type]
+		hp: hp
 	};
 	if (gameStarted) {
-		unit.deployTime = parseInt(unit.properties["Turns to Deploy"]);
+		unit.deployTime = parseInt(statsManager.getProperties(type)["Turns to Deploy"]);
 	} else {
 		unit.deployTime = 0;
 	}
@@ -42,7 +44,7 @@ function restrictMapView(mapJSON, user) {
 	for (var unit of mapJSON.units) {
 		if (unit.user == user && unit.deployTime == 0) {
 			units.push(unit);
-			var range = unit.properties["Vision"]*1000;
+			var range = statsManager.getProperties(unit.type)["Vision"]*1000;
 			for (var unit2 of mapJSON.units) {
 				var [unit1x, unit1y] = unit.loc;
 				var [unit2x, unit2y] = unit2.loc;
@@ -72,8 +74,23 @@ function startGame() {
 	turnChangeTime[users[1]] = (new Date()).getTime() + settings.turnTime * 2;
 }
 
+function attemptMove(units, id, newLocation) {
+	for (var unit of units) {
+		if (unit.id == id) {
+			unit.loc = newLocation;
+			return;
+		}
+	}
+	console.log(`Invalid move made: id ${id} not found`);
+}
+
+function deleteUnit(mapJSON, id) {
+	mapJSON.units = mapJSON.units.filter(u => u.id != id);
+}
+
 function handleSync(reqBody, mapJSON) {
 	var changes = reqBody.changes;
+	var response = new Object();
 	if (reqBody.username == "admin" || changes.length==0) {
 		for (var change of changes) {
 			// Admin changes
@@ -87,22 +104,14 @@ function handleSync(reqBody, mapJSON) {
 						id = 0;
 					}
 
-					mapJSON.units.push(createUnit(id, change.loc, change.unitType, change.user));
+					mapJSON.units.push(createUnit(id, change.loc, change.unitType, change.user, 100));
 
 					break;
 				case "move":
 					changeOccured();
 					var id = change.unitId;
 					var newLocation = change.newLocation;
-					move: {
-						for (var unit of mapJSON.units) {
-							if (unit.id == id) {
-								unit.loc = newLocation;
-								break move;
-							}
-						}
-						console.log(`Invalid move made: id ${id} not found`);
-					}
+					attemptMove(mapJSON.units, id, newLocation);
 					break;
 				case "delete":
 					changeOccured();
@@ -110,15 +119,17 @@ function handleSync(reqBody, mapJSON) {
 					if (unit == null) {
 						console.log(`Invalid delete made: id ${change.unitId} not found`);
 					} else {
-						mapJSON.units = mapJSON.units.filter(u => u.id != change.unitId);
+						deleteUnit(mapJSON, change.unitId);
 					}
 					break;
 				case "setTurnTime":
 					settings.turnTime = change.time*1000;
+
 					break;
 				case "startTurnChanging":
 					mapJSON.gameStarted = true;
 					startGame();
+
 					break;
 				case "reset":
 					changeOccured();
@@ -128,6 +139,7 @@ function handleSync(reqBody, mapJSON) {
 					defaultMap = fs.readFileSync('default-map.json');
 					defaultMapJSON = JSON.parse(defaultMap);
 					mapJSON = defaultMapJSON;
+
 					break;
 				default:
 					console.log(`Unusual change requested: ${change.type}`);
@@ -135,17 +147,21 @@ function handleSync(reqBody, mapJSON) {
 		}
 
 		var mapRaw = JSON.stringify(mapJSON);
-		response = {
-			turnTime: settings.turnTime,
-			anyChanges: anyChanges[reqBody.username],
-			usersList: users
-		};
+
+		response.turnTime = settings.turnTime;
+		response.anyChanges = anyChanges[reqBody.username];
+		response.usersList = users;
+
+		if (firstSync[reqBody.username] || reqBody.firstSync) {
+			firstSync[reqBody.username] = false;
+			response.anyChanges = true;
+			response.statsData = statsManager.getData();
+		}
 
 		if (reqBody.username == "admin") {
-			response.unitTypes = Object.keys(unitTypes);
 			response.mapState = mapJSON;
 		} else {
-			checkForMissingUsers();
+			checkForMissingUsers(mapJSON.units);
 			response.mapState = restrictMapView(mapJSON, reqBody.username);
 			response.nextTurnChange = turnChangeTime[reqBody.username];
 			response.isCorrectTurn = getNextTurnUser() == reqBody.username;
@@ -215,9 +231,21 @@ function getNextTurnUser() {
 	return nextUser;
 }
 
+function attemptAttack(attacker, defender) {
+	var dodgeChance = statsManager.getDodgeChance(attacker.type, defender.type);
+	if (Math.random()*100>=dodgeChance) {
+		defender.hp -= statsManager.getAttackStrength(attacker.type, defender.type);
+		attacker.hp -= statsManager.getDefenceStrength(attacker.type, defender.type);
+		return true;
+	} else {
+		return false;
+	}
+}
+
 function handleTurnChange(reqBody, mapJSON) {
 	var nextUser = getNextTurnUser();
 	var isCorrectTurn = reqBody.username == nextUser;
+	var response = new Object();
 	if (isCorrectTurn) {
 		var d = new Date();
 		advanceTurnTimer(0, mapJSON.units);
@@ -229,21 +257,25 @@ function handleTurnChange(reqBody, mapJSON) {
 					changeOccured();
 					var id = change.unitId;
 					var newLocation = change.newLocation;
-					move: {
-						for (var unit of mapJSON.units) {
-							if (unit.id == id) {
-								unit.loc = newLocation;
-								break move;
-							}
-						}
-						console.log(`Invalid move made: id ${id} not found`);
-					}
+					attemptMove(mapJSON.units, id, newLocation);
 					break;
 				case "attack":
 					changeOccured();
 					var attacker = getUnitById(mapJSON.units, change.attackerId);
 					var defender = getUnitById(mapJSON.units, change.defenderId);
-					console.log(`Attack by ${attacker.id} of type ${attacker.type} against ${defender.id} of type ${defender.type}`)
+					if (!attemptAttack(attacker, defender)) {
+						if (!response.failedAttacks) {
+							response.failedAttacks = [];
+						}
+						response.failedAttacks.push(`Attacking ${attacker.type} missed the defending ${defender.type}.`)
+					} else {
+						if (attacker.hp <= 0) {
+							deleteUnit(mapJSON, change.attackerId);
+						}
+						if (defender.hp <= 0) {
+							deleteUnit(mapJSON, change.defenderId);
+						}
+					}
 					break;
 				default:
 					console.log(`Unusual change requested: ${change.type}`);
@@ -252,15 +284,12 @@ function handleTurnChange(reqBody, mapJSON) {
 
 		var mapRaw = JSON.stringify(mapJSON);
 		checkForMissingUsers(mapJSON.units);
-		response = {
-			nextTurnChange: turnChangeTime[reqBody.username],
-			turnTime: isCorrectTurn,
-			anyChanges: anyChanges[reqBody.username],
-			usersList: users
-		};
+		response.nextTurnChange = turnChangeTime[reqBody.username];
+		response.turnTime = isCorrectTurn;
+		response.anyChanges = anyChanges[reqBody.username];
+		response.usersList = users;
 		if (reqBody.username == "admin") {
 			response.mapState =  mapJSON;
-			response.unitTypes = Object.keys(unitTypes);
 		} else {
 			response.mapState = restrictMapView(mapJSON, reqBody.username);
 		}
@@ -270,14 +299,12 @@ function handleTurnChange(reqBody, mapJSON) {
 	} else {
 		console.log(`Out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser} at time ${(new Date()).getTime()}`);
 		// response = makeError(`out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser}`)
-		response = {
-			mapState: restrictMapView(mapJSON),
-			nextTurnChange: turnChangeTime[reqBody.username],
-			isCorrectTurn: isCorrectTurn,
-			anyChanges: anyChanges[reqBody.username]
-		};
+		response.mapState = restrictMapView(mapJSON);
+		response.nextTurnChange = turnChangeTime[reqBody.username];
+		response.isCorrectTurn = isCorrectTurn;
+		response.anyChanges = anyChanges[reqBody.username];
+
 		if (reqBody.username == "admin") {
-			response.unitTypes = Object.keys(unitTypes);
 			response.usersList = users;
 		}
 	}
@@ -288,13 +315,13 @@ function handleTurnChange(reqBody, mapJSON) {
 users = ["Blufor", "Opfor"];
 
 logins = {
-    "admin": "",
+    "admin":    "",
     [users[0]]: "",
     [users[1]]: ""
 };
 
 anyChanges = {
-	"admin": true,
+	"admin":    true,
 	[users[0]]: true,
 	[users[1]]: true,
 };
@@ -303,6 +330,12 @@ turnChangeTime = {
 	[users[0]]: 0,
 	[users[1]]: 0
 };
+
+firstSync = {
+	"admin":    true,
+	[users[0]]: true,
+	[users[1]]: true
+}
 
 function changeOccured() {
 	for (var key in anyChanges) {
@@ -313,19 +346,6 @@ function changeOccured() {
 // File reading
 
 settings = JSON.parse(fs.readFileSync('settings.json'));
-
-unitTypes = new Object();
-
-function addUnitType(object) {
-	var type = object["Unit Type"]
-	unitTypes[type] = object
-	delete unitTypes[type]["Unit Type"]
-}
-
-csv
-  .parseFile('./stats.csv', {headers: true})
-  .on('error', error => console.error(error))
-  .on('data', row => addUnitType(row));
 
 
 if (!fs.existsSync("data")) {

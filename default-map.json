@@ -5,40 +5,16 @@
 			"loc": [2792000,4856000],
 			"type": "Infantry Battalion",
 			"user": "Blufor",
-			"properties": {
-				"Abbreviation": "INF BTN",
-				"Speed": "6",
-				"Range to refuel": "n/a",
-				"Turns to Deploy": "3",
-				"Concealment": "5",
-				"Vision": "10",
-				"Pieces per Unit": "800",
-				"Name of Piece": "Soldiers",
-				"Training level":"Regular",
-				"Domain": "Land",
-				"Attack Range": 1
-			},
-			"deployTime": 0
+			"deployTime": 0,
+			"hp": 100
 		},
 		{
 			"id": 3,
 			"loc": [2826000,4862000],
 			"type": "Infantry Battalion",
 			"user": "Opfor",
-			"properties": {
-				"Abbreviation": "INF BTN",
-				"Speed": "6",
-				"Range to refuel": "n/a",
-				"Turns to Deploy": "3",
-				"Concealment": "5",
-				"Vision": "10",
-				"Pieces per Unit": "800",
-				"Name of Piece": "Soldiers",
-				"Training level": "Regular",
-				"Domain": "Land",
-				"Attack Range": 1
-			},
-			"deployTime": 0
+			"deployTime": 0,
+			"hp": 100
 		}
 	],
 	"gameStarted": false

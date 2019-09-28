@@ -1,0 +1,17 @@
+﻿Unit Type,Surface to Air Missile,Jet Fighter,Stealth Fighter,Anti-Ship Aircraft,Anti-Submarine Aircraft,Cruiser,Destroyer,Frigate,Attack Submarine Nuclear,Attack Submarine Diesel/Electric
+Transport Helicopter Squadron,10,5,5,0,0,0,0,0,0,0
+Attack Helicopter Squadron,15,10,5,0,0,0,0,0,0,0
+Jet Fighter Squadron,20,15,10,0,0,0,0,0,0,0
+Stealth Fighter Squadron,25,20,15,0,0,0,0,0,0,0
+Bomber Flight,15,10,10,0,0,0,0,0,0,0
+Stealth Bomber Flight,25,15,15,0,0,0,0,0,0,0
+Anti-Ship Aircraft Flight,15,10,10,0,0,0,0,0,0,0
+Anti-Submarine Aircraft Flight,15,10,10,0,0,0,0,0,0,0
+Transport Aircraft Flight,15,10,10,0,0,0,0,0,0,0
+Carrier,0,0,0,15,0,15,15,15,10,10
+Cruiser,0,0,0,15,0,15,15,15,10,10
+Destroyer,0,0,0,15,0,15,15,15,10,10
+Frigate,0,0,0,15,0,15,15,15,10,10
+Attack Submarine Nuclear,0,0,0,0,10,15,10,10,10,10
+Attack Submarine Diesel Electric ,0,0,0,0,10,15,10,10,10,10
+Transport Ship,0,0,0,10,0,5,5,5,10,10
