@@ -27,7 +27,7 @@ const LAND = 2;
 
 // OpenLayers
 var map;
-var unitSource, movesSource, moveCircleSource, fogSource;
+var unitSource, movesSource, attacksSource, moveCircleSource, fogSource;
 var turnManager;
 var tooltipElement, graticule;
 var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton, deploymentFinishButton, resetMapButton;
@@ -130,6 +130,7 @@ class Unit {
 		this.properties = statsManager.getProperties(type);
 		this.display();
 		this.moveFeature = null;
+		this.attackFeature = null;
 		this.seen = false;
 		this.deployTime = deployTime;
 		this.moveDistance = 0.0;
@@ -210,34 +211,53 @@ var TooltipControl = (function (Control) {
 	TooltipControl.prototype.receiveClick = function receiveClick(event) {
 		var clickedElement = event.target;
 
-		if (clickedElement.tagName == "TD") {
-			var row = clickedElement.parentNode;
+		switch (clickedElement.tagName) {
+			case "TD":
+				var row = clickedElement.parentNode;
 
-			if (row.classList.contains("unitGroup")) {
-				displayTooltip([getUnitById(row.id)], lastClick);
-			}
-		} else if (clickedElement.tagName == "TR") {
-			if (clickedElement.classList.contains("unitGroup")) {
-				displayTooltip([getUnitById(clickedElement.id)], lastClick);
-			}
+				if (row.classList.contains("unitGroup")) {
+					displayTooltip([getUnitById(row.id)], lastClick);
+				}
+				break;
+			case "TR":
+				if (clickedElement.classList.contains("unitGroup")) {
+					displayTooltip([getUnitById(clickedElement.id)], lastClick);
+				}
+				break;
+			default:
+				break;
 		}
 
-		if (clickedElement.id == "createUnitButton") {
-			var unitType = document.getElementById("typeEntry").value;
-			var user = document.getElementById("userEntry").value;
+		switch (clickedElement.id) {
+			case "createUnitButton":
+				var unitType = document.getElementById("typeEntry").value;
+				var user = document.getElementById("userEntry").value;
 
-			createUnit(tooltipLocation, unitType, user);
-			hideTooltip();
-		} else if (clickedElement.id == "deleteUnitButton") {
-			var unitId = selectedUnit.id;
-			changes.push({type:"delete", unitId: unitId});
-			hideTooltip();
-		} else if (clickedElement.id == "attackButton") {
-			startAttacking();
-			hideTooltip();
-			if (isFirst('attack')) {
-				notification.show("To choose a unit to attack, left click the desired unit");
-			}
+				createUnit(tooltipLocation, unitType, user);
+				hideTooltip();
+				break;
+			case "deleteUnitButton":
+				var unitId = selectedUnit.id;
+				changes.push({type:"delete", unitId: unitId});
+				hideTooltip();
+				break;
+			case "attackButton":
+				startAttacking();
+				hideTooltip();
+				if (isFirst('attack')) {
+					notification.show("To choose a unit to attack, left click the desired unit");
+				}
+				break;
+			case "cancelAttackButton":
+				if (selectedUnit.attackFeature != null && attacksSource.hasFeature(selectedUnit.attackFeature)){
+					attacksSource.removeFeature(selectedUnit.attackFeature);
+				}
+				selectedUnit.attackFeature = null;
+				deleteAnyOldAttacks(selectedUnit.id);
+				displayTooltip([selectedUnit], lastClick)
+				break;
+			default:
+				break;
 		}
 	};
 
@@ -256,6 +276,7 @@ mapMaxY = 7200000;
 
 unitSource = new VectorSource();
 movesSource = new VectorSource();
+attacksSource = new VectorSource();
 moveCircleSource = new VectorSource();
 fogSource = new VectorSource();
 
@@ -283,6 +304,16 @@ map = new Map({
 				stroke: new Stroke({
 					width: 5,
 					color: [150, 180, 240]
+				})
+			}),
+			zIndex: 1
+		}),
+		new VectorLayer({
+			source: attacksSource,
+			style: new Style({
+				stroke: new Stroke({
+					width: 6,
+					color: [200, 0, 0]
 				})
 			}),
 			zIndex: 1
@@ -552,13 +583,18 @@ function displayTooltip(units, pixel) {
 		if (username == "admin") {
 			tooltipTable.innerHTML += `
 			<tr>
-				<td/><td><button type="button" id="deleteUnitButton"/>Delete</td>
+				<td/><td><button type="button" id="deleteUnitButton">Delete</button></td>
 			</tr>
 			`
 		} else if (username == selectedUnit.user){
+			var cancelAttackButtonString = "</td>";
+			if (selectedUnit.attackFeature) {
+				cancelAttackButtonString = `<td><button type="button" id="cancelAttackButton">Cancel attack</button></td>`;
+			}
+
 			tooltipTable.innerHTML += `
 			<tr>
-				<td/><td><button type="button" id="attackButton"/>Attack</td>
+				${cancelAttackButtonString}<td><button type="button" id="attackButton">Attack</button></td>
 			</tr>
 			`
 		}
@@ -616,7 +652,7 @@ function displayRightTooltip(pixel) {
 	str += `
 		</select></td>
 	</tr><tr>
-		<td/><td><button type="button" id="createUnitButton"/>Create</td>
+		<td/><td><button type="button" id="createUnitButton">Create</button></td>
 	</tr>
 	`;
 	tooltipTable.innerHTML = str;
@@ -765,6 +801,14 @@ function attemptAttack(defendingUnit) {
 			deleteAnyOldAttacks(attackingUnit.id);
 			changes.push({type: "attack", attackerId: attackingUnit.id, defenderId: defendingUnit.id});
 			attacking = false;
+			notification.show("Attack planned");
+			var f = new Feature(new LineString([
+				attackingUnit.loc,
+				defendingUnit.loc
+			]));
+			attacksSource.addFeature(f);
+
+			attackingUnit.attackFeature = f;
 		} else {
 			cancelAttack("Defending unit out of range");
 		}
@@ -1067,10 +1111,12 @@ function turnChange() {
 	xmlhttp.send(JSON.stringify(requestData));
 	syncNeedsRestarting = true;
 	movesSource.clear();
+	attacksSource.clear();
 	moveCircleSource.clear();
 	hideTooltip();
 	for (var unit of units) {
 		unit.moveFeature = null;
+		unit.attackFeature = null;
 	}
 }
 
