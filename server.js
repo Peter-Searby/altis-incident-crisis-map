@@ -277,6 +277,9 @@ function handleTurnChange(reqBody, mapJSON) {
 						}
 					}
 					break;
+				case "enterAirfield":
+					changeOccured();
+					var unit = getUnitById(mapJSON.units, change.unitId);
 				default:
 					console.log(`Unusual change requested: ${change.type}`);
 			}
