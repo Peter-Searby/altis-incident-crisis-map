@@ -44,19 +44,21 @@ body {
 	color: inherit;
 }
 
+/* Admin Buttons */
+
 .turnTime {
-	right: 50%;
-	top: 1em;
+	left: 1em;
+	bottom: 55%;
 }
 
 .deploymentFinish {
-	right: 40%;
-	top: 1em;
+	left: 1em;
+	bottom: 60%;
 }
 
 .resetMap {
 	left: 1em;
-	bottom: 50%
+	bottom: 50%;
 }
 
 .turn-change {

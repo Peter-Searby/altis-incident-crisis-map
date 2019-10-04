@@ -23,6 +23,7 @@ const StatsManager = require('./stats').StatsManager;
 const SEA_COLOUR = [182, 210, 236];
 const SEA = 1;
 const LAND = 2;
+const START_DATE = new Date(2020, 5, 6, 10)
 
 
 // OpenLayers
@@ -32,6 +33,7 @@ var turnManager;
 var tooltipElement, graticule;
 var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton, deploymentFinishButton, resetMapButton;
 var fogFeature;
+var title;
 
 var selectedUnit, attackingUnit;
 
@@ -213,12 +215,7 @@ var TooltipControl = (function (Control) {
 
 		switch (clickedElement.tagName) {
 			case "TD":
-				var row = clickedElement.parentNode;
-
-				if (row.classList.contains("unitGroup")) {
-					displayTooltip([getUnitById(row.id)], lastClick);
-				}
-				break;
+				var clickedElement = clickedElement.parentNode;
 			case "TR":
 				if (clickedElement.classList.contains("unitGroup")) {
 					displayTooltip([getUnitById(clickedElement.id)], lastClick);
@@ -995,6 +992,19 @@ function displayFailedAttacks(attacks) {
 	}
 }
 
+function updateTitle(time) {
+	var currentTime = new Date(time*3600000+START_DATE.getTime());
+	var d = currentTime.getDate();
+	var mo = currentTime.getMonth();
+	var y = currentTime.getFullYear()-2000;
+	var h = currentTime.getHours();
+	var mi = currentTime.getMinutes();
+	function padInt(i) {
+		return `${i}`.padStart(2, '0')
+	}
+	title.setContent(`<div style="text-align: center">${username}</div>${padInt(d)}/${padInt(mo)}/${padInt(y)}<br/><div style="text-align: center">${padInt(h)}:${padInt(mi)}</div>`)
+}
+
 function handleResponse() {
 	if (this.readyState == 4 && this.status == 200) {
 		var responseJSON = JSON.parse(this.responseText);
@@ -1032,6 +1042,8 @@ function handleResponse() {
 					units.splice(units.indexOf(unit), 1);
 				}
 			}
+
+			updateTitle(mapJSON.currentTime);
 
 			if (username != "admin") {
 				// Handle user specific syncing
@@ -1179,13 +1191,13 @@ function start() {
 	repeatSync = setInterval(sync, 1000);
 
 	// Title
-	var turnManager = new Overlay({
+	title = new Overlay({
 		closeBox: false,
 		className: "title",
 		content: username
 	});
 
-	map.addControl(turnManager);
+	map.addControl(title);
 }
 
 function login() {

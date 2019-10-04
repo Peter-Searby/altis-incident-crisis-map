@@ -30,5 +30,6 @@
 			]
 		}
 	],
-	"gameStarted": false
+	"gameStarted": false,
+	"currentTime": 0
 }
