@@ -28,7 +28,7 @@ const START_DATE = new Date(2020, 5, 6, 10)
 
 // OpenLayers
 var map;
-var unitSource, movesSource, attacksSource, moveCircleSource, fogSource;
+var unitSource, movesSource, attacksSource, moveCircleSource, fogSource, airfieldsSource;
 var turnManager;
 var tooltipElement, graticule;
 var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton, deploymentFinishButton, resetMapButton;
@@ -39,7 +39,7 @@ var selectedUnit, attackingUnit;
 
 var nextTurnChange, isUsersTurn, lastClick, changes, started, syncNeedsRestarting, justStarted, attacking, gameStarted;
 var mapMinX, mapMinY, mapMaxX, mapMaxY;
-var units, usersList;
+var units, airfields, usersList;
 var tooltipLocation;
 var url;
 
@@ -81,6 +81,13 @@ var pointStyle = new Style({
 		stroke: new Stroke({color: 'black', width: 1})
 	})
 });
+
+var airfieldStyle = new Style({
+    image: new Icon({
+        src: `../res/airfield.svg`,
+        scale: 0.25
+    })
+})
 
 var graticuleStyle = new Style({
 	stroke: new Stroke({
@@ -272,6 +279,7 @@ mapMaxX = 4000000;
 mapMaxY = 7200000;
 
 unitSource = new VectorSource();
+airfieldsSource = new VectorSource();
 movesSource = new VectorSource();
 attacksSource = new VectorSource();
 moveCircleSource = new VectorSource();
@@ -322,7 +330,11 @@ map = new Map({
 		new VectorLayer({
 			source: unitSource,
 			zIndex: 1
-		})
+		}),
+        new VectorLayer({
+            source: airfieldsSource,
+            zIndex: 1
+        })
 	],
 	target: 'map',
 	view: new View({
@@ -366,6 +378,7 @@ isUsersTurn = false;
 // Data stuff
 
 units = [];
+airfields = [];
 
 url = "test.json";
 started = false;
@@ -709,6 +722,13 @@ function moveUnit(unit, loc) {
 	updateZoom();
 }
 
+function addAirfield(rawAirfield) {
+    airfields.push(rawAirfield)
+    var feature = new Feature(new Point(rawAirfield.loc));
+	feature.setStyle(airfieldStyle);
+    airfieldsSource.addFeature(feature);
+}
+
 function moveCommand(unit, loc) {
 	function inRange(d) {
 		return d <= parseInt(unit.properties["Speed"])*1000;
@@ -1036,6 +1056,13 @@ function handleResponse() {
 			for (var rawUnit of mapJSON.units) {
 				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.user, rawUnit.deployTime, rawUnit.hp);
 			}
+
+            airfields = []
+            airfieldsSource.clear()
+            // Parse airfields
+            for (var airfield of mapJSON.airfields) {
+                addAirfield(airfield);
+            }
 
 			for (var unit of units) {
 				if (!unit.seen) {
