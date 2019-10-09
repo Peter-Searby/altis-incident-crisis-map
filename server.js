@@ -242,11 +242,18 @@ function attemptAttack(attacker, defender) {
 	}
 }
 
+function advanceGameTime(mapJSON) {
+    mapJSON["currentTime"] += 1;
+}
+
 function handleTurnChange(reqBody, mapJSON) {
 	var nextUser = getNextTurnUser();
 	var isCorrectTurn = reqBody.username == nextUser;
 	var response = new Object();
 	if (isCorrectTurn) {
+        if (nextUser == users[users.length-1]) {
+            advanceGameTime(mapJSON);
+        }
 		var d = new Date();
 		advanceTurnTimer(0, mapJSON.units);
 		var changes = reqBody.changes;
