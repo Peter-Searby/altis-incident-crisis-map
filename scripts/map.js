@@ -688,9 +688,10 @@ function roundLocationBy(loc, amount) {
 	return [Math.round(loc[0]/amount)*amount, Math.round(loc[1]/amount)*amount];
 }
 
-function addUnit(loc, id, type, user, deployTime, hp) {
+function addUnit(rawUnit) {
 	var unit;
-	var originalUnit = getUnitById(id);
+	var originalUnit = getUnitById(rawUnit.id);
+    var id = rawUnit.id;
 
 	if (id == undefined) {
 		if (units) {
@@ -700,17 +701,22 @@ function addUnit(loc, id, type, user, deployTime, hp) {
 		}
 	}
 
-	loc = roundLocation(loc);
+	var loc = roundLocation(rawUnit.loc);
 
 	if (originalUnit != null) {
 		unit = originalUnit;
 		unit.loc = loc;
-		unit.deployTime = deployTime
-		unit.hp = hp;
+		unit.deployTime = rawUnit.deployTime
+		unit.hp = rawUnit.hp;
 	} else {
-		unit = new Unit(loc, id, type, user, deployTime, hp);
+		unit = new Unit(loc, id, rawUnit.type, rawUnit.user, rawUnit.deployTime, rawUnit.hp);
 		units.push(unit);
 	}
+
+    if (rawUnit.type == "Carrier") {
+        unit.airfieldId = rawUnit.airfieldId;
+    }
+
 	unit.seen = true;
 	unitSource.addFeature(unit.feature);
 	updateZoom();
@@ -1054,7 +1060,7 @@ function handleResponse() {
 				unit.seen = false;
 			}
 			for (var rawUnit of mapJSON.units) {
-				addUnit(rawUnit.loc, rawUnit.id, rawUnit.type, rawUnit.user, rawUnit.deployTime, rawUnit.hp);
+				addUnit(rawUnit);
 			}
 
             airfields = []

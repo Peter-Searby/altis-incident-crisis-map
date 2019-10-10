@@ -30,6 +30,9 @@ function createUnit(id, loc, type, user, hp) {
 		user: user,
 		hp: hp
 	};
+    if (type == "Carrier") {
+        unit.airfieldId = id+1000;
+    }
 	if (gameStarted) {
 		unit.deployTime = parseInt(statsManager.getProperties(type)["Turns to Deploy"]);
 	} else {
@@ -74,10 +77,21 @@ function startGame() {
 	turnChangeTime[users[1]] = (new Date()).getTime() + settings.turnTime * 2;
 }
 
-function attemptMove(units, id, newLocation) {
-	for (var unit of units) {
+function moveAirfield(mapJSON, airfieldId, loc) {
+    for (var airfield of mapJSON.airfields) {
+        if (airfield.id == airfieldId) {
+            airfield.loc = loc;
+        }
+    }
+}
+
+function attemptMove(mapJSON, id, newLocation) {
+	for (var unit of mapJSON.units) {
 		if (unit.id == id) {
-			unit.loc = newLocation;
+            if (unit.type == "Carrier") {
+                moveAirfield(mapJSON, unit.airfieldId, newLocation);
+            }
+            unit.loc = newLocation;
 			return;
 		}
 	}
@@ -111,7 +125,7 @@ function handleSync(reqBody, mapJSON) {
 					changeOccured();
 					var id = change.unitId;
 					var newLocation = change.newLocation;
-					attemptMove(mapJSON.units, id, newLocation);
+					attemptMove(mapJSON, id, newLocation);
 					break;
 				case "delete":
 					changeOccured();
@@ -264,7 +278,7 @@ function handleTurnChange(reqBody, mapJSON) {
 					changeOccured();
 					var id = change.unitId;
 					var newLocation = change.newLocation;
-					attemptMove(mapJSON.units, id, newLocation);
+					attemptMove(mapJSON, id, newLocation);
 					break;
 				case "attack":
 					changeOccured();
