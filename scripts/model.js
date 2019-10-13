@@ -123,6 +123,9 @@ class Model {
             unit.seen = false;
         }
     }
+    removeUnit(unit) {
+    	this.units = this.units.filter(u => u.id != unit.id);
+    }
 }
 
 

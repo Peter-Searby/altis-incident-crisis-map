@@ -144,7 +144,7 @@ class UnitGroup {
 		}
 
 		this.units.push(unit);
-		unitHide(unit);
+		hideUnit(unit);
 	}
 }
 
@@ -210,6 +210,14 @@ var DropdownControl = (function (Control) {
 				deleteAnyOldAttacks(selectedUnit.id);
 				displayDropdown([selectedUnit], [], lastClick)
 				break;
+            case "returnToAirfieldButton":
+                var airfield = getNearestAirfield(selectedUnit);
+                airfield.units.push(selectedUnit);
+                model.removeUnit(selectedUnit);
+                hideUnit(selectedUnit);
+                hideDropdown();
+                // TODO fix by adding serverside changes
+                break;
 			default:
 				break;
 		}
@@ -466,6 +474,9 @@ function onUnitsChange() {
 	fogFeature.setGeometry(new Polygon([pointsOfBounds, ...cutoutsMerged]));
 }
 
+function getNearestAirfield(unit) {
+    return model.airfields[0];
+}
 
 function getMapPointType(pixel) {
 	return map.forEachLayerAtPixel(pixel, function(layer, colour) {
@@ -497,25 +508,47 @@ function getAirfieldAffiliation(airfield) {
     }
 }
 
+function airfieldNearby(unit) {
+    for (var airfield of model.airfields) {
+        var afil = getAirfieldAffiliation(airfield)
+        if (afil == "Neutral" || afil == unit.user) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Unit dropdown
 function displayDropdown(units, airfields, pixel) {
+    var positionStyle = ``
+    if (2*pixel[0] < width) {
+        positionStyle += `left: ${pixel[0]}px;`;
+    } else {
+        positionStyle += `right: ${width-pixel[0]}px;`;
+    }
+    if (2*pixel[1] < height) {
+        positionStyle += `top: ${pixel[1]}px;`;
+    } else {
+        positionStyle += `bottom: ${height-pixel[1]}px;`;
+    }
 	dropdownElement.style.cssText = `
 	position: absolute;
 	background-color: white;
-	top: ${pixel[1]}px;
-	left: ${pixel[0]}px;
 	display:block;
-	`;
+	${positionStyle}`;
 	var dropdownTable = document.getElementById("dropdownTable");
 
 	if (units.length == 1 && airfields.length == 0) {
 		// Unit details
 
 		var unit = units[0];
+
 		if (selectedUnit != unit) {
 			displayMoveCircle(unit);
 			selectedUnit = unit;
 		}
+
+        // Header
 		dropdownTable.innerHTML = `
 		<tr class="dropdownHeader">
 			<th>${unit.type}</th><th>${unit.hp} HP</th>
@@ -524,6 +557,8 @@ function displayDropdown(units, airfields, pixel) {
 		<td style="font-style: italic">${unit.user}</td>
 		</tr>
 		`;
+
+        // Deploy time
 
 		if (username == "admin" && unit.deployTime > 0) {
 			var s;
@@ -539,6 +574,8 @@ function displayDropdown(units, airfields, pixel) {
 			`
 		}
 
+        // Unit properties
+
 		for (var prop in unit.properties) {
 			dropdownTable.innerHTML += `
 			<tr class="singleUnit">
@@ -548,21 +585,45 @@ function displayDropdown(units, airfields, pixel) {
 			`;
 		}
 
+        // Aircraft airfield buttons
+        if (unit.properties["Domain"] == "Air") {
+            if (airfieldNearby(unit)) {
+                // Return to airfield button
+                dropdownTable.innerHTML += `
+                <tr>
+                    <td/><td><button type="button" class="button" id="returnToAirfieldButton">
+                        Return to compatible airfield
+                    </button></td>
+                </tr>`
+            }
+        }
+
+
 		if (username == "admin") {
+
+            // Delete unit button
 			dropdownTable.innerHTML += `
 			<tr>
-				<td/><td><button type="button" id="deleteUnitButton">Delete</button></td>
+				<td/><td><button type="button" class="button" id="deleteUnitButton">
+                    Delete
+                </button></td>
 			</tr>
 			`
 		} else if (username == selectedUnit.user){
+
+            // Attack and cancel attack buttons
 			var cancelAttackButtonString = "</td>";
 			if (selectedUnit.attackFeature) {
-				cancelAttackButtonString = `<td><button type="button" id="cancelAttackButton">Cancel attack</button></td>`;
+				cancelAttackButtonString = `<td><button type="button" class="button" id="cancelAttackButton">
+                    Cancel attack
+                </button></td>`;
 			}
 
 			dropdownTable.innerHTML += `
 			<tr>
-				${cancelAttackButtonString}<td><button type="button" id="attackButton">Attack</button></td>
+				${cancelAttackButtonString}<td><button type="button" class="button" id="attackButton">
+                    Attack
+                </button></td>
 			</tr>
 			`
 		}
@@ -594,6 +655,8 @@ function displayDropdown(units, airfields, pixel) {
 		}
 
         if (units.length > 0) {
+            // Unit list
+
     		dropdownTable.innerHTML = `
     		<tr class="dropdownHeader">
     			<th>Units</th>
@@ -610,6 +673,8 @@ function displayDropdown(units, airfields, pixel) {
         }
 
         if (airfields.length>0){
+            // Airfield list
+
     		dropdownTable.innerHTML += `
     		<tr class="dropdownHeader">
     			<th>Airfields</th>
@@ -659,7 +724,9 @@ function displayRightDropdown(pixel) {
 	str += `
 		</select></td>
 	</tr><tr>
-		<td/><td><button type="button" id="createUnitButton">Create</button></td>
+		<td/><td><button type="button" class="button" id="createUnitButton">
+            Create
+        </button></td>
 	</tr>
 	`;
 	dropdownTable.innerHTML = str;
@@ -799,7 +866,7 @@ function cancelAttack(message) {
 function deleteAnyOldAttacks(id) {
 	for (var i in changes) {
 		if (changes[i].type == "attack" && changes[i].attackerId == id) {
-			changes.splice(i, 1);
+			changes = changes.splice(i, 1);
 		}
 	}
 }

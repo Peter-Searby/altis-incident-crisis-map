@@ -24,19 +24,7 @@ body {
 	right:0%
 }
 
-#createUnitButton {
-	width: auto;
-}
-
-#deleteUnitButton {
-	width: auto;
-}
-
-#attackButton {
-	width: auto;
-}
-
-#cancelAttackButton {
+.dropdown .button {
 	width: auto;
 }
 
