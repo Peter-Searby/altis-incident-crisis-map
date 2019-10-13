@@ -20,6 +20,7 @@ import Notification from 'ol-ext/control/Notification.js';
 import convexHull from 'ol-ext/geom/ConvexHull.js';
 const jsts = require('jsts');
 const StatsManager = require('./stats').StatsManager;
+const Model = require('./model').Model;
 const SEA_COLOUR = [182, 210, 236];
 const SEA = 1;
 const LAND = 2;
@@ -39,7 +40,6 @@ var selectedUnit, attackingUnit;
 
 var nextTurnChange, isUsersTurn, lastClick, changes, started, syncNeedsRestarting, justStarted, attacking, gameStarted;
 var mapMinX, mapMinY, mapMaxX, mapMaxY;
-var units, airfields, usersList;
 var dropdownLocation;
 var url;
 
@@ -49,6 +49,7 @@ var username;
 var password;
 
 var statsManager;
+var model = new Model();
 var DropdownControl;
 
 var width = window.innerWidth
@@ -120,64 +121,13 @@ function unitStyleGenerator(type, user) {
 		image: new Icon({
 			src: `../res/units/${type}.svg`,
 			scale: 0.25,
-			color: userColours[usersList.indexOf(user)]
+			color: userColours[model.usersList.indexOf(user)]
 		})
 	});
 }
 
 
 // Classes
-
-class Unit {
-	constructor(loc, id, type, user, deployTime, hp) {
-		this.feature = new Feature(new Point(loc));
-		this.feature.setId(id);
-		this.feature.setStyle(unitStyleGenerator(type, user));
-		this.loc = loc;
-		this.type = type;
-		this.user = user;
-		this.properties = statsManager.getProperties(type);
-		this.display();
-		this.moveFeature = null;
-		this.attackFeature = null;
-		this.seen = false;
-		this.deployTime = deployTime;
-		this.moveDistance = 0.0;
-		this.visualLoc = roundLocation(loc);
-		this.hp = hp;
-	}
-
-	toRaw() {
-		return {
-			id: this.feature.getId(),
-			loc: this.loc,
-			type: this.type,
-			user: this.user,
-			properties: this.properties,
-			deployTime: this.deployTime,
-			hp: this.hp
-		};
-	}
-
-	get id() {
-		return this.feature.getId();
-	}
-
-	updateZoom(gridWidth){
-		this.feature.setGeometry(new Point(this.loc));
-		this.visualLoc = roundLocationBy(this.loc, gridWidth)
-	}
-
-	hide() {
-		if (unitSource.hasFeature(this.feature)){
-			unitSource.removeFeature(this.feature);
-		}
-	}
-
-	display() {
-		unitSource.addFeature(this.feature);
-	}
-}
 
 class UnitGroup {
 	constructor(unit) {
@@ -187,14 +137,14 @@ class UnitGroup {
 
 	addUnit(unit) {
 		if (this.units.length == 1) {
-			this.units[0].hide();
+			hideUnit(this.units[0]);
 			this.feature = new Feature(new Point(unit.visualLoc));
 			this.feature.setStyle(pointStyle);
 			unitSource.addFeature(this.feature);
 		}
 
 		this.units.push(unit);
-		unit.hide();
+		unitHide(unit);
 	}
 }
 
@@ -225,7 +175,7 @@ var DropdownControl = (function (Control) {
 				var clickedElement = clickedElement.parentNode;
 			case "TR":
 				if (clickedElement.classList.contains("unitGroup")) {
-					displayDropdown([getUnitById(clickedElement.id)], lastClick);
+					displayDropdown([model.getUnitById(clickedElement.id)], [], lastClick);
 				}
 				break;
 			default:
@@ -258,7 +208,7 @@ var DropdownControl = (function (Control) {
 				}
 				selectedUnit.attackFeature = null;
 				deleteAnyOldAttacks(selectedUnit.id);
-				displayDropdown([selectedUnit], lastClick)
+				displayDropdown([selectedUnit], [], lastClick)
 				break;
 			default:
 				break;
@@ -377,8 +327,6 @@ isUsersTurn = false;
 
 // Data stuff
 
-units = [];
-airfields = [];
 
 url = "test.json";
 started = false;
@@ -445,7 +393,7 @@ function onUnitsChange() {
 		[mapMinX, mapMinY]
 	];
 	var cutouts = [];
-	for (var unit of units) {
+	for (var unit of model.units) {
 		if (unit.user == username) {
 			var r = parseInt(unit.properties["Vision"]);
 			var p = unit.loc[0] / 1000;
@@ -624,6 +572,7 @@ function displayDropdown(units, airfields, pixel) {
 		if (selectedUnit != null) {
 			selectedUnit = null;
 		}
+
 		dropdownTable.innerHTML = `
 		<tr class="dropdownHeader">
 			<th>Airfield</th>
@@ -637,7 +586,6 @@ function displayDropdown(units, airfields, pixel) {
 			</tr>
 			`;
 		}
-
     } else {
 		// Entity Group
 
@@ -704,7 +652,7 @@ function displayRightDropdown(pixel) {
 	</tr><tr>
 		<td>type:</td><td><select id="userEntry">
 	`;
-	for (var user of usersList) {
+	for (var user of model.usersList) {
 		str += `<option value="${user}">${user}</option>`;
 	}
 
@@ -725,7 +673,7 @@ function hideDropdown() {
 
 function updateDropdown() {
 	if (selectedUnit != null) {
-		 displayDropdown([selectedUnit], map.getPixelFromCoordinate(selectedUnit.loc));
+		 displayDropdown([selectedUnit], [], map.getPixelFromCoordinate(selectedUnit.loc));
 	}
 }
 
@@ -738,38 +686,26 @@ function roundLocationBy(loc, amount) {
 }
 
 function addUnit(rawUnit) {
-	var unit;
-	var originalUnit = getUnitById(rawUnit.id);
-    var id = rawUnit.id;
+    var unit = model.addUnit(rawUnit, statsManager.getProperties(rawUnit.type));
 
-	if (id == undefined) {
-		if (units) {
-			id = units[units.length-1].id+1;
-		} else {
-			id = 0;
-		}
-	}
-
-	var loc = roundLocation(rawUnit.loc);
-
-	if (originalUnit != null) {
-		unit = originalUnit;
-		unit.loc = loc;
-		unit.deployTime = rawUnit.deployTime
-		unit.hp = rawUnit.hp;
-	} else {
-		unit = new Unit(loc, id, rawUnit.type, rawUnit.user, rawUnit.deployTime, rawUnit.hp);
-		units.push(unit);
-	}
-
-    if (rawUnit.type == "Carrier") {
-        unit.airfieldId = rawUnit.airfieldId;
-    }
-
-	unit.seen = true;
-	unitSource.addFeature(unit.feature);
+    var feature = new Feature(new Point(unit.loc));
+    feature.setId(rawUnit.id);
+    feature.setStyle(unitStyleGenerator(unit.type, unit.user));
+    unit.setFeature(feature);
+	unitSource.addFeature(feature);
 	updateZoom();
 	return unit;
+}
+
+
+function hideUnit(unit) {
+    if (unitSource.hasFeature(unit.feature)){
+        unitSource.removeFeature(unit.feature);
+    }
+}
+
+function displayUnit(unit) {
+    unitSource.addFeature(unit.feature);
 }
 
 function moveUnit(unit, loc) {
@@ -778,7 +714,7 @@ function moveUnit(unit, loc) {
 }
 
 function addAirfield(rawAirfield) {
-    airfields.push(rawAirfield)
+    model.addAirfield(rawAirfield);
     var feature = new Feature(new Point(rawAirfield.loc));
 	feature.setStyle(airfieldStyle);
     airfieldsSource.addFeature(feature);
@@ -825,22 +761,13 @@ function removeMove(unit) {
 	}
 }
 
-function getUnitFromFeature(feature) {
-	for (var unit of units) {
-		if (unit.feature == feature) {
-			return unit;
-		}
-	}
-	throw "Can't find unit with requested feature";
-}
-
 function createUnit(loc, type, user) {
 	changes.push({type: "add", loc: loc, unitType: type, user: user});
 }
 
 function getUnitsAt(pixel) {
 	var foundUnits = [];
-	for (var unit of units) {
+	for (var unit of model.units) {
 		var unitPixel = map.getPixelFromCoordinate(unit.loc);
 		var distance = Math.hypot(unitPixel[0]-pixel[0]-15*unitPixel[0]/width, unitPixel[1] - pixel[1]-4*unitPixel[1]/height);
 		if (distance<40) {
@@ -852,7 +779,7 @@ function getUnitsAt(pixel) {
 
 function getAirfieldsAt(pixel) {
 	var foundAfs = [];
-	for (var airfield of airfields) {
+	for (var airfield of model.airfields) {
 		var airfieldPixel = map.getPixelFromCoordinate(airfield.loc);
 		var distance = Math.hypot(airfieldPixel[0]-pixel[0]-15*airfieldPixel[0]/width, airfieldPixel[1] - pixel[1]-4*airfieldPixel[1]/height);
 		if (distance<40) {
@@ -866,7 +793,7 @@ function cancelAttack(message) {
 	notification.show(message);
 	selectedUnit = attackingUnit;
 	attacking = false;
-	displayDropdown([selectedUnit], map.getPixelFromCoordinate(selectedUnit.loc));
+	displayDropdown([selectedUnit], [], map.getPixelFromCoordinate(selectedUnit.loc));
 }
 
 function deleteAnyOldAttacks(id) {
@@ -962,8 +889,8 @@ function updateZoom() {
 	setGraticuleWidth((Math.exp(zoom-4)-1)/20000);
 	var unitGroups = new Object();
 	unitSource.clear();
-	for (var unit of units) {
-		unit.updateZoom(gridWidth);
+	for (var unit of model.units) {
+		unit.updateZoom(gridWidth, Point);
 		var x = unit.visualLoc[0].toString();
 		var y = unit.visualLoc[1].toString();
 		if (unitGroups[y]) {
@@ -971,12 +898,12 @@ function updateZoom() {
 				unitGroups[y][x].addUnit(unit);
 			} else {
 				unitGroups[y][x] = new UnitGroup(unit);
-				unit.display();
+				displayUnit(unit);
 			}
 		} else {
 			unitGroups[y] = new Object();
 			unitGroups[y][x] = new UnitGroup(unit);
-			unit.display();
+			displayUnit(unit);
 		}
 	}
 }
@@ -1064,15 +991,6 @@ function keyUpEvent(event) {
 
 }
 
-function getUnitById(id) {
-	for (var unit of units) {
-		if (unit.id == id) {
-			return unit;
-		}
-	}
-	return null;
-}
-
 function displayFailedAttacks(attacks) {
 	if (attacks.length != 0) {
 		notification.show(attacks.pop(), 500);
@@ -1098,7 +1016,7 @@ function handleResponse() {
 		var responseJSON = JSON.parse(this.responseText);
 		var error = responseJSON.error;
 		if (responseJSON.usersList) {
-			usersList = responseJSON.usersList;
+			model.usersList = responseJSON.usersList;
 		}
 		if (error) {
 			console.log(error);
@@ -1118,25 +1036,19 @@ function handleResponse() {
 
 
 			// Parse units
-			for (var unit of units) {
-				unit.seen = false;
-			}
+            model.resetUnitSight();
 			for (var rawUnit of mapJSON.units) {
 				addUnit(rawUnit);
 			}
 
-            airfields = []
             airfieldsSource.clear()
+
+            model.airfields = [];
             // Parse airfields
             for (var airfield of mapJSON.airfields) {
                 addAirfield(airfield);
             }
-
-			for (var unit of units) {
-				if (!unit.seen) {
-					units.splice(units.indexOf(unit), 1);
-				}
-			}
+            model.removeUnseenUnits();
 
 			updateTitle(mapJSON.currentTime);
 
@@ -1221,7 +1133,7 @@ function turnChange() {
 	attacksSource.clear();
 	moveCircleSource.clear();
 	hideDropdown();
-	for (var unit of units) {
+	for (var unit of model.units) {
 		unit.moveFeature = null;
 		unit.attackFeature = null;
 	}
