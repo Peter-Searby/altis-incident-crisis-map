@@ -14,7 +14,7 @@ body {
 	height: 30%;
 }
 
-#tooltip {
+#dropdown {
 	position: absolute;
 	display: none;
 }

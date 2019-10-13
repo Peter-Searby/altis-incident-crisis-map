@@ -30,7 +30,7 @@ const START_DATE = new Date(2020, 5, 6, 10)
 var map;
 var unitSource, movesSource, attacksSource, moveCircleSource, fogSource, airfieldsSource;
 var turnManager;
-var tooltipElement, graticule;
+var dropdownElement, graticule;
 var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton, deploymentFinishButton, resetMapButton;
 var fogFeature;
 var title;
@@ -40,7 +40,7 @@ var selectedUnit, attackingUnit;
 var nextTurnChange, isUsersTurn, lastClick, changes, started, syncNeedsRestarting, justStarted, attacking, gameStarted;
 var mapMinX, mapMinY, mapMaxX, mapMaxY;
 var units, airfields, usersList;
-var tooltipLocation;
+var dropdownLocation;
 var url;
 
 var turnTimer, repeatSync, turnTimeUpdater;
@@ -49,7 +49,7 @@ var username;
 var password;
 
 var statsManager;
-var TooltipControl;
+var DropdownControl;
 
 var width = window.innerWidth
 || document.documentElement.clientWidth
@@ -85,7 +85,7 @@ var pointStyle = new Style({
 var airfieldStyle = new Style({
     image: new Icon({
         src: `../res/airfield.svg`,
-        scale: 0.25
+        scale: 0.1
     })
 })
 
@@ -198,26 +198,26 @@ class UnitGroup {
 	}
 }
 
-var TooltipControl = (function (Control) {
-	function TooltipControl(opt_options) {
+var DropdownControl = (function (Control) {
+	function DropdownControl(opt_options) {
 		var options = opt_options || {};
 
-		tooltipElement.className = 'tooltip ol-unselectable ol-control';
+		dropdownElement.className = 'dropdown ol-unselectable ol-control';
 
 		Control.call(this, {
-			element: tooltipElement,
+			element: dropdownElement,
 			target: options.target
 		});
 
-		tooltipElement.addEventListener('click', this.receiveClick.bind(this), false);
+		dropdownElement.addEventListener('click', this.receiveClick.bind(this), false);
 	}
 
-	if (Control) TooltipControl.__proto__ = Control;
+	if (Control) DropdownControl.__proto__ = Control;
 
-	TooltipControl.prototype = Object.create(Control && Control.prototype);
-	TooltipControl.prototype.constructor = TooltipControl;
+	DropdownControl.prototype = Object.create(Control && Control.prototype);
+	DropdownControl.prototype.constructor = DropdownControl;
 
-	TooltipControl.prototype.receiveClick = function receiveClick(event) {
+	DropdownControl.prototype.receiveClick = function receiveClick(event) {
 		var clickedElement = event.target;
 
 		switch (clickedElement.tagName) {
@@ -225,7 +225,7 @@ var TooltipControl = (function (Control) {
 				var clickedElement = clickedElement.parentNode;
 			case "TR":
 				if (clickedElement.classList.contains("unitGroup")) {
-					displayTooltip([getUnitById(clickedElement.id)], lastClick);
+					displayDropdown([getUnitById(clickedElement.id)], lastClick);
 				}
 				break;
 			default:
@@ -237,17 +237,17 @@ var TooltipControl = (function (Control) {
 				var unitType = document.getElementById("typeEntry").value;
 				var user = document.getElementById("userEntry").value;
 
-				createUnit(tooltipLocation, unitType, user);
-				hideTooltip();
+				createUnit(dropdownLocation, unitType, user);
+				hideDropdown();
 				break;
 			case "deleteUnitButton":
 				var unitId = selectedUnit.id;
 				changes.push({type:"delete", unitId: unitId});
-				hideTooltip();
+				hideDropdown();
 				break;
 			case "attackButton":
 				startAttacking();
-				hideTooltip();
+				hideDropdown();
 				if (isFirst('attack')) {
 					notification.show("To choose a unit to attack, left click the desired unit");
 				}
@@ -258,14 +258,14 @@ var TooltipControl = (function (Control) {
 				}
 				selectedUnit.attackFeature = null;
 				deleteAnyOldAttacks(selectedUnit.id);
-				displayTooltip([selectedUnit], lastClick)
+				displayDropdown([selectedUnit], lastClick)
 				break;
 			default:
 				break;
 		}
 	};
 
-	return TooltipControl;
+	return DropdownControl;
 }(Control));
 
 
@@ -285,11 +285,11 @@ attacksSource = new VectorSource();
 moveCircleSource = new VectorSource();
 fogSource = new VectorSource();
 
-tooltipElement = document.getElementById('tooltip');
+dropdownElement = document.getElementById('dropdown');
 
 map = new Map({
 	controls: defaultControls().extend([
-		new TooltipControl()
+		new DropdownControl()
     ]),
 	layers: [
 		new TileLayer({
@@ -384,7 +384,7 @@ url = "test.json";
 started = false;
 attacking = false;
 
-tooltipLocation = null;
+dropdownLocation = null;
 selectedUnit = null;
 
 lastClick = null;
@@ -541,18 +541,26 @@ function displayMoveCircle(unit) {
 	}
 }
 
-// Unit tooltip
-function displayTooltip(units, pixel) {
-	tooltipElement.style.cssText = `
+function getAirfieldAffiliation(airfield) {
+    if (airfield.units.length == 0) {
+        return "Neutral";
+    } else {
+        return airfield.units[0].user;
+    }
+}
+
+// Unit dropdown
+function displayDropdown(units, airfields, pixel) {
+	dropdownElement.style.cssText = `
 	position: absolute;
 	background-color: white;
 	top: ${pixel[1]}px;
 	left: ${pixel[0]}px;
 	display:block;
 	`;
-	var tooltipTable = document.getElementById("tooltipTable");
+	var dropdownTable = document.getElementById("dropdownTable");
 
-	if (units.length == 1) {
+	if (units.length == 1 && airfields.length == 0) {
 		// Unit details
 
 		var unit = units[0];
@@ -560,8 +568,8 @@ function displayTooltip(units, pixel) {
 			displayMoveCircle(unit);
 			selectedUnit = unit;
 		}
-		tooltipTable.innerHTML = `
-		<tr class="tooltipHeader">
+		dropdownTable.innerHTML = `
+		<tr class="dropdownHeader">
 			<th>${unit.type}</th><th>${unit.hp} HP</th>
 		</tr>
 		<tr>
@@ -576,22 +584,24 @@ function displayTooltip(units, pixel) {
 			} else {
 				s = "s";
 			}
-			tooltipTable.innerHTML += `
+			dropdownTable.innerHTML += `
 			<tr>
 				<td><b>Deploys in ${unit.deployTime} turn${s}</b></td>
 			</tr>
 			`
 		}
+
 		for (var prop in unit.properties) {
-			tooltipTable.innerHTML += `
+			dropdownTable.innerHTML += `
 			<tr class="singleUnit">
 				<td>${prop}</td>
 				<td>${unit.properties[prop]}</td>
 			</tr>
 			`;
 		}
+
 		if (username == "admin") {
-			tooltipTable.innerHTML += `
+			dropdownTable.innerHTML += `
 			<tr>
 				<td/><td><button type="button" id="deleteUnitButton">Delete</button></td>
 			</tr>
@@ -602,45 +612,84 @@ function displayTooltip(units, pixel) {
 				cancelAttackButtonString = `<td><button type="button" id="cancelAttackButton">Cancel attack</button></td>`;
 			}
 
-			tooltipTable.innerHTML += `
+			dropdownTable.innerHTML += `
 			<tr>
 				${cancelAttackButtonString}<td><button type="button" id="attackButton">Attack</button></td>
 			</tr>
 			`
 		}
-	} else {
-		// Unit Group
+	} else if (airfields.length == 1 && units.length == 0){
+        //Airfield details
 
 		if (selectedUnit != null) {
 			selectedUnit = null;
 		}
-		tooltipTable.innerHTML = `
-		<tr class="tooltipHeader">
-			<th>Unit Group</th>
+		dropdownTable.innerHTML = `
+		<tr class="dropdownHeader">
+			<th>Airfield</th>
 		</tr>
 		`;
-		for (var unit of units) {
-			tooltipTable.innerHTML += `
+		for (var unit of airfields[0].units) {
+			dropdownTable.innerHTML += `
 			<tr id=${unit.id} class="unitGroup">
 				<td>${unit.type}</td>
 				<td style="font-style: italic">${unit.user}</td>
 			</tr>
 			`;
 		}
+
+    } else {
+		// Entity Group
+
+		if (selectedUnit != null) {
+			selectedUnit = null;
+		}
+
+        if (units.length > 0) {
+    		dropdownTable.innerHTML = `
+    		<tr class="dropdownHeader">
+    			<th>Units</th>
+    		</tr>
+    		`;
+    		for (var unit of units) {
+    			dropdownTable.innerHTML += `
+    			<tr id=${unit.id} class="unitGroup">
+    				<td>${unit.type}</td>
+    				<td style="font-style: italic">${unit.user} units</td>
+    			</tr>
+    			`;
+    		}
+        }
+
+        if (airfields.length>0){
+    		dropdownTable.innerHTML += `
+    		<tr class="dropdownHeader">
+    			<th>Airfields</th>
+    		</tr>
+    		`;
+    		for (var airfield of airfields) {
+    			dropdownTable.innerHTML += `
+    			<tr id=${airfield.id} class="unitGroup">
+    				<td>${getAirfieldAffiliation(airfield)} airfield</td>
+    				<td>${airfield.units.length}</td>
+    			</tr>
+    			`;
+    		}
+        }
 	}
 }
 
-function displayRightTooltip(pixel) {
-	tooltipElement.style.cssText = `
+function displayRightDropdown(pixel) {
+	dropdownElement.style.cssText = `
 	position: absolute;
 	background-color: white;
 	top: ${pixel[1]}px;
 	left: ${pixel[0]}px;
 	display:block;
 	`;
-	var tooltipTable = document.getElementById("tooltipTable");
+	var dropdownTable = document.getElementById("dropdownTable");
 	 var str = `
-	<tr class="tooltipHeader">
+	<tr class="dropdownHeader">
 		<th>New Unit</th>
 	</tr><tr>
 		<td>type:</td><td><select id="typeEntry">
@@ -665,18 +714,18 @@ function displayRightTooltip(pixel) {
 		<td/><td><button type="button" id="createUnitButton">Create</button></td>
 	</tr>
 	`;
-	tooltipTable.innerHTML = str;
+	dropdownTable.innerHTML = str;
 }
 
-function hideTooltip() {
-	tooltipElement.style.cssText = 'display:none;';
+function hideDropdown() {
+	dropdownElement.style.cssText = 'display:none;';
 	selectedUnit = null;
 	moveCircleSource.clear();
 }
 
-function updateTooltip() {
+function updateDropdown() {
 	if (selectedUnit != null) {
-		 displayTooltip([selectedUnit], map.getPixelFromCoordinate(selectedUnit.loc));
+		 displayDropdown([selectedUnit], map.getPixelFromCoordinate(selectedUnit.loc));
 	}
 }
 
@@ -801,11 +850,23 @@ function getUnitsAt(pixel) {
 	return foundUnits;
 }
 
+function getAirfieldsAt(pixel) {
+	var foundAfs = [];
+	for (var airfield of airfields) {
+		var airfieldPixel = map.getPixelFromCoordinate(airfield.loc);
+		var distance = Math.hypot(airfieldPixel[0]-pixel[0]-15*airfieldPixel[0]/width, airfieldPixel[1] - pixel[1]-4*airfieldPixel[1]/height);
+		if (distance<40) {
+			foundAfs.push(airfield);
+		}
+	}
+	return foundAfs;
+}
+
 function cancelAttack(message) {
 	notification.show(message);
 	selectedUnit = attackingUnit;
 	attacking = false;
-	displayTooltip([selectedUnit], map.getPixelFromCoordinate(selectedUnit.loc));
+	displayDropdown([selectedUnit], map.getPixelFromCoordinate(selectedUnit.loc));
 }
 
 function deleteAnyOldAttacks(id) {
@@ -842,29 +903,30 @@ function attemptAttack(defendingUnit) {
 
 map.on('click', function (event) {
 	var unitsUnder = getUnitsAt(event.pixel);
-	if (unitsUnder.length != 0) {
+    var airfieldsUnder = getAirfieldsAt(event.pixel);
+	if (unitsUnder.length+airfieldsUnder.length != 0) {
 		if (attacking) {
-			if (unitsUnder.length == 1) {
+			if (unitsUnder.length == 0) {
+    			cancelAttack("No unit there");
+            } else if (unitsUnder.length == 1) {
 				attemptAttack(unitsUnder[0]);
 			} else {
 				notification.show("Too many units under mouse. Zoom in for greater precision");
 			}
 		} else {
-			displayTooltip(unitsUnder, event.pixel);
+			displayDropdown(unitsUnder, airfieldsUnder, event.pixel);
 			lastClick = event.pixel;
 		}
 	} else {
-		if (attacking) {
-			cancelAttack("No unit there");
-		} else {
-			hideTooltip();
+		if (!attacking) {
+			hideDropdown();
 		}
 	}
 });
 
 map.on('moveend', function (event) {
 	updateZoom();
-	updateTooltip();
+	updateDropdown();
 });
 
 function updateZoom() {
@@ -953,7 +1015,7 @@ function rightClick(e) {
 		var allowed = false;
 		if (username == "admin") {
 			moveUnit(selectedUnit, loc);
-			hideTooltip();
+			hideDropdown();
 			allowed = true;
 		} else {
 
@@ -980,8 +1042,8 @@ function rightClick(e) {
 		}
 	} else {
 		if (username == "admin") {
-			tooltipLocation = loc;
-			displayRightTooltip([e.clientX, e.clientY]);
+			dropdownLocation = loc;
+			displayRightDropdown([e.clientX, e.clientY]);
 		}
 	}
 }
@@ -1158,7 +1220,7 @@ function turnChange() {
 	movesSource.clear();
 	attacksSource.clear();
 	moveCircleSource.clear();
-	hideTooltip();
+	hideDropdown();
 	for (var unit of units) {
 		unit.moveFeature = null;
 		unit.attackFeature = null;
