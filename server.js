@@ -77,15 +77,21 @@ function startGame() {
 	turnChangeTime[users[1]] = (new Date()).getTime() + settings.turnTime * 2;
 }
 
+function getAirfieldById(mapJSON, airfieldId) {
+	for (var airfield of mapJSON.airfields) {
+		if (airfield.id == airfieldId) {
+			return airfield;
+		}
+	}
+	return null;
+}
+
 function moveAirfield(mapJSON, airfieldId, loc) {
-    for (var airfield of mapJSON.airfields) {
-        if (airfield.id == airfieldId) {
-            airfield.loc = loc;
-        }
-    }
+	getAirfieldById(mapJSON, airfieldId).loc = loc;
 }
 
 function attemptMove(mapJSON, id, newLocation) {
+	changeOccured();
 	for (var unit of mapJSON.units) {
 		if (unit.id == id) {
             if (unit.type == "Carrier") {
@@ -98,8 +104,39 @@ function attemptMove(mapJSON, id, newLocation) {
 	console.log(`Invalid move made: id ${id} not found`);
 }
 
-function deleteUnit(mapJSON, id) {
-	mapJSON.units = mapJSON.units.filter(u => u.id != id);
+function exitAirfield(mapJSON, airfieldId, unitId) {
+	changeOccured();
+	var airfield = getAirfieldById(airfieldId);
+	var unitToDelete = -1;
+	for (var unitId_ in airfield.units) {
+		var unit = airfield.units[unitId_];
+		if (unit.id == unitId) {
+			unitToDelete = unit;
+			mapJSON.units.push(unit);
+			break;
+		}
+	}
+	if (unitToDelete == -1) {
+		console.log(`Invalid unit (${unitId}) deletion from airfield ${airfieldId}`);
+	} else {
+		deleteUnit(airfield, unitToDelete.id)
+	}
+}
+
+function returnToAirfield(mapJSON, unitId, airfieldId) {
+	changeOccured();
+	var unit = getUnitById(mapJSON.units, unitId);
+	deleteUnit(mapJSON, unitId);
+	var airfield = getAirfieldById(mapJSON, airfieldId)
+	if (airfield != null){
+		airfield.units.push(unit);
+	} else {
+		console.log(`Failed return to airfield as airfield id ${airfieldId} wasnt found`);
+	}
+}
+
+function deleteUnit(unitContainer, id) {
+	unitContainer.units = unitContainer.units.filter(u => u.id != id);
 }
 
 function handleSync(reqBody, mapJSON) {
@@ -122,10 +159,7 @@ function handleSync(reqBody, mapJSON) {
 
 					break;
 				case "move":
-					changeOccured();
-					var id = change.unitId;
-					var newLocation = change.newLocation;
-					attemptMove(mapJSON, id, newLocation);
+					attemptMove(mapJSON, change.unitId, change.newLocation);
 					break;
 				case "delete":
 					changeOccured();
@@ -138,7 +172,6 @@ function handleSync(reqBody, mapJSON) {
 					break;
 				case "setTurnTime":
 					settings.turnTime = change.time*1000;
-
 					break;
 				case "startTurnChanging":
 					mapJSON.gameStarted = true;
@@ -153,7 +186,12 @@ function handleSync(reqBody, mapJSON) {
 					defaultMap = fs.readFileSync('default-map.json');
 					defaultMapJSON = JSON.parse(defaultMap);
 					mapJSON = defaultMapJSON;
-
+					break;
+				case "returnToAirfield":
+					returnToAirfield(mapJSON, change.unitId, change.airfieldId);
+					break;
+				case "exitAirfield":
+					exitAirfield(mapJSON, change.airfieldId, change.unitId);
 					break;
 				default:
 					console.log(`Unusual change requested: ${change.type}`);
@@ -275,10 +313,7 @@ function handleTurnChange(reqBody, mapJSON) {
 			// User changes
 			switch (change.type) {
 				case "move":
-					changeOccured();
-					var id = change.unitId;
-					var newLocation = change.newLocation;
-					attemptMove(mapJSON, id, newLocation);
+					attemptMove(mapJSON, change.unitId, change.newLocation);
 					break;
 				case "attack":
 					changeOccured();
@@ -298,9 +333,12 @@ function handleTurnChange(reqBody, mapJSON) {
 						}
 					}
 					break;
-				case "enterAirfield":
-					changeOccured();
-					var unit = getUnitById(mapJSON.units, change.unitId);
+				case "returnToAirfield":
+					returnToAirfield(mapJSON, change.unitId, change.airfieldId);
+					break;
+				case "exitAirfield":
+					exitAirfield(mapJSON, change.airfieldId, change.unitId);
+					break;
 				default:
 					console.log(`Unusual change requested: ${change.type}`);
 			}

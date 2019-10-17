@@ -211,12 +211,14 @@ var DropdownControl = (function (Control) {
 				displayDropdown([selectedUnit], [], lastClick)
 				break;
             case "returnToAirfieldButton":
-                var airfield = getNearestAirfield(selectedUnit);
-                airfield.units.push(selectedUnit);
-                model.removeUnit(selectedUnit);
-                hideUnit(selectedUnit);
+				var airfield = getNearestAirfield(selectedUnit);
+				changes.push({
+					"type": "returnToAirfield",
+					"unitId": selectedUnit.id,
+					"airfieldId": airfield.id
+				});
+
                 hideDropdown();
-                // TODO fix by adding serverside changes
                 break;
 			default:
 				break;
