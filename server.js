@@ -106,7 +106,7 @@ function attemptMove(mapJSON, id, newLocation) {
 
 function exitAirfield(mapJSON, airfieldId, unitId) {
 	changeOccured();
-	var airfield = getAirfieldById(airfieldId);
+	var airfield = getAirfieldById(mapJSON, airfieldId);
 	var unitToDelete = -1;
 	for (var unitId_ in airfield.units) {
 		var unit = airfield.units[unitId_];
@@ -124,11 +124,12 @@ function exitAirfield(mapJSON, airfieldId, unitId) {
 }
 
 function returnToAirfield(mapJSON, unitId, airfieldId) {
-	changeOccured();
-	var unit = getUnitById(mapJSON.units, unitId);
-	deleteUnit(mapJSON, unitId);
 	var airfield = getAirfieldById(mapJSON, airfieldId)
 	if (airfield != null){
+		changeOccured();
+		var unit = getUnitById(mapJSON.units, unitId);
+		unit.loc = null;
+		deleteUnit(mapJSON, unitId);
 		airfield.units.push(unit);
 	} else {
 		console.log(`Failed return to airfield as airfield id ${airfieldId} wasnt found`);

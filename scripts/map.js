@@ -36,7 +36,7 @@ var dialogPromptUser, dialogPromptPassword, notification, turnTimeButton, deploy
 var fogFeature;
 var title;
 
-var selectedUnit, attackingUnit;
+var selectedUnit, attackingUnit, selectedAirfield;
 
 var nextTurnChange, isUsersTurn, lastClick, changes, started, syncNeedsRestarting, justStarted, attacking, gameStarted;
 var mapMinX, mapMinY, mapMaxX, mapMaxY;
@@ -177,6 +177,14 @@ var DropdownControl = (function (Control) {
 				if (clickedElement.classList.contains("unitGroup")) {
 					displayDropdown([model.getUnitById(clickedElement.id)], [], lastClick);
 				}
+				if (clickedElement.classList.contains("airfieldStorage")) {
+					for (var unit of selectedAirfield.units) {
+						if (clickedElement.id == unit.id) {
+							displayDropdown([unit], [], lastClick);
+							break;
+						}
+					}
+				}
 				break;
 			default:
 				break;
@@ -220,6 +228,15 @@ var DropdownControl = (function (Control) {
 
                 hideDropdown();
                 break;
+			case "exitAirfieldButton":
+				changes.push({
+					"type": "exitAirfield",
+					"unitId": selectedUnit.id,
+					"airfieldId": selectedAirfield.id
+				});
+
+				hideDropdown();
+				break;
 			default:
 				break;
 		}
@@ -522,7 +539,8 @@ function airfieldNearby(unit) {
 
 // Unit dropdown
 function displayDropdown(units, airfields, pixel) {
-    var positionStyle = ``
+    var positionStyle = '';
+
     if (2*pixel[0] < width) {
         positionStyle += `left: ${pixel[0]}px;`;
     } else {
@@ -533,11 +551,13 @@ function displayDropdown(units, airfields, pixel) {
     } else {
         positionStyle += `bottom: ${height-pixel[1]}px;`;
     }
+
 	dropdownElement.style.cssText = `
 	position: absolute;
 	background-color: white;
 	display:block;
 	${positionStyle}`;
+
 	var dropdownTable = document.getElementById("dropdownTable");
 
 	if (units.length == 1 && airfields.length == 0) {
@@ -580,29 +600,40 @@ function displayDropdown(units, airfields, pixel) {
 
 		for (var prop in unit.properties) {
 			dropdownTable.innerHTML += `
-			<tr class="singleUnit">
-				<td>${prop}</td>
-				<td>${unit.properties[prop]}</td>
-			</tr>
+				<tr class="singleUnit">
+					<td>${prop}</td>
+					<td>${unit.properties[prop]}</td>
+				</tr>
 			`;
 		}
 
-        // Aircraft airfield buttons
+		if (unit.loc == null) {
+			// Stored aircraft specifc elements
+
+			dropdownTable.innerHTML += `
+				<tr>
+					<td/><td><button type="button" class="button" id="exitAirfieldButton">
+						Leave airfield
+					</button></td>
+				</tr>
+			`;
+		}
+
         if (unit.properties["Domain"] == "Air") {
+			// Aircraft airfield buttons
+
             if (airfieldNearby(unit)) {
                 // Return to airfield button
                 dropdownTable.innerHTML += `
-                <tr>
-                    <td/><td><button type="button" class="button" id="returnToAirfieldButton">
-                        Return to compatible airfield
-                    </button></td>
-                </tr>`
+	                <tr>
+	                    <td/><td><button type="button" class="button" id="returnToAirfieldButton">
+	                        Return to compatible airfield
+	                    </button></td>
+	                </tr>`
             }
         }
 
-
 		if (username == "admin") {
-
             // Delete unit button
 			dropdownTable.innerHTML += `
 			<tr>
@@ -635,6 +666,9 @@ function displayDropdown(units, airfields, pixel) {
 		if (selectedUnit != null) {
 			selectedUnit = null;
 		}
+		if (selectedAirfield == null) {
+			selectedAirfield = airfields[0];
+		}
 
 		dropdownTable.innerHTML = `
 		<tr class="dropdownHeader">
@@ -643,7 +677,7 @@ function displayDropdown(units, airfields, pixel) {
 		`;
 		for (var unit of airfields[0].units) {
 			dropdownTable.innerHTML += `
-			<tr id=${unit.id} class="unitGroup">
+			<tr id=${unit.id} class="airfieldStorage">
 				<td>${unit.type}</td>
 				<td style="font-style: italic">${unit.user}</td>
 			</tr>

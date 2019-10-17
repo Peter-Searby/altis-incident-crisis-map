@@ -24,6 +24,7 @@
 			"units": [
 				{
 					"id": 0,
+					"loc": null,
 					"type": "Jet Fighter Squadron",
                     "user": "Opfor",
 					"hp": 100
