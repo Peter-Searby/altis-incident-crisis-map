@@ -511,7 +511,7 @@ function getMapPointType(pixel) {
 }
 
 function displayMoveCircle(unit) {
-	if (unit.user == username) {
+	if (unit.user == username && unit.properties) {
 		var rad = parseInt(unit.properties["Speed"])*1000;
 		moveCircleSource.clear();
 		var moveCircleFeature = new Feature(new Circle(unit.loc, rad));
@@ -776,7 +776,13 @@ function hideDropdown() {
 
 function updateDropdown() {
 	if (selectedUnit != null) {
-		 displayDropdown([selectedUnit], [], map.getPixelFromCoordinate(selectedUnit.loc));
+        var loc;
+        if (selectedUnit.loc) {
+            loc = selectedUnit.loc;
+        } else {
+            loc = selectedAirfield.loc;
+        }
+		displayDropdown([selectedUnit], [], map.getPixelFromCoordinate(loc));
 	}
 }
 

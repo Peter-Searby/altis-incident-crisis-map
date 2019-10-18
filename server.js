@@ -22,7 +22,13 @@ function makeError(error) {
 	return {error: error};
 }
 
-function createUnit(id, loc, type, user, hp) {
+function createUnit(units, loc, type, user, hp) {
+    var id;
+    if (units) {
+        id = units[units.length - 1].id + 1;
+    } else {
+        id = 0;
+    }
 	var unit = {
 		id: id,
 		loc: loc,
@@ -49,11 +55,13 @@ function restrictMapView(mapJSON, user) {
 			units.push(unit);
 			var range = statsManager.getProperties(unit.type)["Vision"]*1000;
 			for (var unit2 of mapJSON.units) {
-				var [unit1x, unit1y] = unit.loc;
-				var [unit2x, unit2y] = unit2.loc;
-				if (Math.hypot(unit1x-unit2x, unit1y-unit2y) <= range && unit2.deployTime == 0) {
-					units.push(unit2);
-				}
+                if (unit2 != unit) {
+    				var [unit1x, unit1y] = unit.loc;
+    				var [unit2x, unit2y] = unit2.loc;
+    				if (Math.hypot(unit1x-unit2x, unit1y-unit2y) <= range && unit2.deployTime == 0) {
+    					units.push(unit2);
+    				}
+                }
 			}
 		}
 	}
@@ -112,7 +120,7 @@ function exitAirfield(mapJSON, airfieldId, unitId) {
 		var unit = airfield.units[unitId_];
 		if (unit.id == unitId) {
 			unitToDelete = unit;
-			mapJSON.units.push(unit);
+			mapJSON.units.push(createUnit(mapJSON.units, airfield.loc, unit.type, unit.user, unit.hp));
 			break;
 		}
 	}
@@ -150,13 +158,8 @@ function handleSync(reqBody, mapJSON) {
 				case "add":
 					var id;
 					changeOccured();
-					if (mapJSON.units) {
-						id = mapJSON.units[mapJSON.units.length - 1].id + 1;
-					} else {
-						id = 0;
-					}
 
-					mapJSON.units.push(createUnit(id, change.loc, change.unitType, change.user, 100));
+					mapJSON.units.push(createUnit(mapJSON.units, change.loc, change.unitType, change.user, 100));
 
 					break;
 				case "move":
