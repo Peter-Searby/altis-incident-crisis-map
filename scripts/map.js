@@ -675,6 +675,9 @@ function displayDropdown(units, airfields, pixel) {
 			<th>Airfield</th>
 		</tr>
 		`;
+        if (airfields[0].units.length == 0) {
+            dropdownTable.innerHTML += '<td style="font-style: italic">empty</td>'
+        }
 		for (var unit of airfields[0].units) {
 			dropdownTable.innerHTML += `
 			<tr id=${unit.id} class="airfieldStorage">
@@ -702,7 +705,7 @@ function displayDropdown(units, airfields, pixel) {
     			dropdownTable.innerHTML += `
     			<tr id=${unit.id} class="unitGroup">
     				<td>${unit.type}</td>
-    				<td style="font-style: italic">${unit.user} units</td>
+    				<td style="font-style: italic">${unit.user}</td>
     			</tr>
     			`;
     		}
@@ -713,7 +716,7 @@ function displayDropdown(units, airfields, pixel) {
 
     		dropdownTable.innerHTML += `
     		<tr class="dropdownHeader">
-    			<th>Airfields</th>
+    			<th>Airfields</th><th>Contents</th>
     		</tr>
     		`;
     		for (var airfield of airfields) {
@@ -784,6 +787,9 @@ function updateDropdown() {
         }
 		displayDropdown([selectedUnit], [], map.getPixelFromCoordinate(loc));
 	}
+    if (selectedAirfield != null) {
+		displayDropdown([], [selectedAirfield], map.getPixelFromCoordinate(selectedAirfield.loc));
+    }
 }
 
 function roundLocation(loc) {
@@ -950,6 +956,12 @@ map.on('click', function (event) {
 				notification.show("Too many units under mouse. Zoom in for greater precision");
 			}
 		} else {
+            if (airfieldsUnder.length == 0) {
+                selectedAirfield = null;
+            }
+            if (unitsUnder.length == 0) {
+                selectedUnit = null;
+            }
 			displayDropdown(unitsUnder, airfieldsUnder, event.pixel);
 			lastClick = event.pixel;
 		}
