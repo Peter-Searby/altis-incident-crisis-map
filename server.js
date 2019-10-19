@@ -22,7 +22,7 @@ function makeError(error) {
 	return {error: error};
 }
 
-function createUnit(units, loc, type, user, hp) {
+function createUnit(units, loc, type, user, hp, delayed) {
     var id;
     if (units) {
         id = units[units.length - 1].id + 1;
@@ -39,7 +39,7 @@ function createUnit(units, loc, type, user, hp) {
     if (type == "Carrier") {
         unit.airfieldId = id+1000;
     }
-	if (gameStarted) {
+	if (gameStarted && delayed) {
 		unit.deployTime = parseInt(statsManager.getProperties(type)["Turns to Deploy"]);
 	} else {
 		unit.deployTime = 0;
@@ -47,7 +47,7 @@ function createUnit(units, loc, type, user, hp) {
 
     var refuelTime = statsManager.getProperties(type)["Turns to refuel"];
     if (refuelTime != "n/a") {
-        unit.refuelTime = parseInt(refuelTime);
+        unit.fuelLeft = parseInt(refuelTime);
     }
 
 	return unit;
@@ -126,7 +126,7 @@ function exitAirfield(mapJSON, airfieldId, unitId) {
 		var unit = airfield.units[unitId_];
 		if (unit.id == unitId) {
 			unitToDelete = unit;
-			mapJSON.units.push(createUnit(mapJSON.units, airfield.loc, unit.type, unit.user, unit.hp));
+			mapJSON.units.push(createUnit(mapJSON.units, airfield.loc, unit.type, unit.user, unit.hp, false));
 			break;
 		}
 	}
@@ -153,9 +153,9 @@ function getNearestAirfield(mapJSON, unit) {
     var closestAirfield = null;
     var closestAirfieldDistance = null;
     for (var airfield of mapJSON.airfields) {
-        if (hasCompatAirfieldAffiliation(airfield)) {
+        if (hasCompatAirfieldAffil(airfield, user)) {
             var d = Math.hypot(airfield.loc[0] - loc[0], airfield.loc[1] - loc[1]);
-            if (d < closestAirfieldDistance) {
+            if (closestAirfieldDistance == null || d < closestAirfieldDistance) {
                 closestAirfield = airfield;
                 closestAirfieldDistance = d;
             }
@@ -193,7 +193,7 @@ function handleSync(reqBody, mapJSON) {
 			switch (change.type) {
 				case "add":
 					changeOccured();
-					mapJSON.units.push(createUnit(mapJSON.units, change.loc, change.unitType, change.user, 100));
+					mapJSON.units.push(createUnit(mapJSON.units, change.loc, change.unitType, change.user, 100, true));
 					break;
 				case "move":
 					attemptMove(mapJSON, change.unitId, change.newLocation);
@@ -275,7 +275,7 @@ function advanceTurnTimer(mapJSON, offset) {
 	var usersCount = users.length;
 	var nextUser = getNextTurnUser();
 
-	for (var unit of units) {
+	for (var unit of mapJSON.units) {
 		if (unit.user == nextUser) {
             if (unit.deployTime > 0) {
     			unit.deployTime--;
@@ -364,6 +364,9 @@ function handleTurnChange(reqBody, mapJSON) {
 					changeOccured();
 					var attacker = getUnitById(mapJSON.units, change.attackerId);
 					var defender = getUnitById(mapJSON.units, change.defenderId);
+                    if (attacker == null || defender == null) {
+                        response.failedAttacks.push(`Attacking ${attacker.type} missed the defending ${defender.type}.`)
+                    } else {
 					if (!attemptAttack(attacker, defender)) {
 						if (!response.failedAttacks) {
 							response.failedAttacks = [];
@@ -377,6 +380,7 @@ function handleTurnChange(reqBody, mapJSON) {
 							deleteUnit(mapJSON, change.defenderId);
 						}
 					}
+                    }
 					break;
 				case "returnToAirfield":
 					returnToAirfield(mapJSON, change.unitId);

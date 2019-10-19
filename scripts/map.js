@@ -593,59 +593,62 @@ function displayDropdown(units, airfields, pixel) {
 			`
 		}
 
-        // Refuel time
-        if (unit.fuelLeft) {
-			var s;
-			if (unit.fuelLeft == 1) {
-				s = "";
-			} else {
-				s = "s";
-			}
-			dropdownTable.innerHTML += `
-			<tr>
-				<td><b>Returns to an airfield in ${unit.fuelLeft} turn${s}</b></td>
-			</tr>
-			`;
-        }
+        // Private info
+        if (unit.user == username || username == "admin") {
+
+            // Refuel time
+            if (unit.fuelLeft != null && unit.loc != null) {
+    			var s;
+    			if (unit.fuelLeft == 1) {
+    				s = "";
+    			} else {
+    				s = "s";
+    			}
+    			dropdownTable.innerHTML += `
+    			<tr>
+    				<td><b>Returns to an airfield in ${unit.fuelLeft} turn${s}</b></td>
+    			</tr>
+    			`;
+            }
 
 
-        // Unit properties
-        dropdownTable.innerHTML += '</br>';
-		for (var prop in unit.properties) {
-			dropdownTable.innerHTML += `
-				<tr class="singleUnit">
-					<td>${prop}</td>
-					<td>${unit.properties[prop]}</td>
-				</tr>
-			`;
-		}
+            // Unit properties
+            dropdownTable.innerHTML += '</br>';
+    		for (var prop in unit.properties) {
+    			dropdownTable.innerHTML += `
+    				<tr class="singleUnit">
+    					<td>${prop}</td>
+    					<td>${unit.properties[prop]}</td>
+    				</tr>
+    			`;
+    		}
 
-		if (unit.loc == null) {
-			// Stored aircraft specifc elements
+    		if (unit.loc == null) {
+    			// Stored aircraft specifc elements
 
-			dropdownTable.innerHTML += `
-				<tr>
-					<td/><td><button type="button" class="button" id="exitAirfieldButton">
-						Leave airfield
-					</button></td>
-				</tr>
-			`;
-		}
+    			dropdownTable.innerHTML += `
+    				<tr>
+    					<td/><td><button type="button" class="button" id="exitAirfieldButton">
+    						Leave airfield
+    					</button></td>
+    				</tr>
+    			`;
+    		}
 
-        if (unit.properties["Domain"] == "Air") {
-			// Aircraft airfield buttons
+            if (unit.properties["Domain"] == "Air") {
+    			// Aircraft airfield buttons
 
-            if (airfieldNearby(unit)) {
-                // Return to airfield button
-                dropdownTable.innerHTML += `
-	                <tr>
-	                    <td/><td><button type="button" class="button" id="returnToAirfieldButton">
-	                        Return to compatible airfield
-	                    </button></td>
-	                </tr>`
+                if (airfieldNearby(unit)) {
+                    // Return to airfield button
+                    dropdownTable.innerHTML += `
+    	                <tr>
+    	                    <td/><td><button type="button" class="button" id="returnToAirfieldButton">
+    	                        Return to compatible airfield
+    	                    </button></td>
+    	                </tr>`
+                }
             }
         }
-
 		if (username == "admin") {
             // Delete unit button
 			dropdownTable.innerHTML += `
