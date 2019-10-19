@@ -44,6 +44,12 @@ function createUnit(units, loc, type, user, hp) {
 	} else {
 		unit.deployTime = 0;
 	}
+
+    var refuelTime = statsManager.getProperties(type)["Turns to refuel"];
+    if (refuelTime != "n/a") {
+        unit.refuelTime = parseInt(refuelTime);
+    }
+
 	return unit;
 }
 
@@ -131,16 +137,46 @@ function exitAirfield(mapJSON, airfieldId, unitId) {
 	}
 }
 
-function returnToAirfield(mapJSON, unitId, airfieldId) {
-	var airfield = getAirfieldById(mapJSON, airfieldId)
+function hasCompatAirfieldAffil(airfield, user) {
+    if (airfield.units.length == 0) {
+        return true;
+    } else {
+        return airfield.units[0].user == user;
+    }
+}
+
+function getNearestAirfield(mapJSON, unit) {
+    var user = unit.user;
+    var loc = unit.loc;
+    var airfieldFound = false;
+    var searchRadius = 0;
+    var closestAirfield = null;
+    var closestAirfieldDistance = null;
+    for (var airfield of mapJSON.airfields) {
+        if (hasCompatAirfieldAffiliation(airfield)) {
+            var d = Math.hypot(airfield.loc[0] - loc[0], airfield.loc[1] - loc[1]);
+            if (d < closestAirfieldDistance) {
+                closestAirfield = airfield;
+                closestAirfieldDistance = d;
+            }
+        }
+    }
+    return closestAirfield;
+}
+
+
+function returnToAirfield(mapJSON, unitId) {
+    var unit = getUnitById(mapJSON.units, unitId);
+	var airfield = getNearestAirfield(mapJSON, unit);
 	if (airfield != null){
+        unit.loc = null;
 		changeOccured();
-		var unit = getUnitById(mapJSON.units, unitId);
-		unit.loc = null;
 		deleteUnit(mapJSON, unitId);
 		airfield.units.push(unit);
 	} else {
-		console.log(`Failed return to airfield as airfield id ${airfieldId} wasnt found`);
+		console.log(`Failed return to airfield as no airfield was found`);
+		changeOccured();
+		deleteUnit(mapJSON, unitId);
 	}
 }
 
@@ -156,11 +192,8 @@ function handleSync(reqBody, mapJSON) {
 			// Admin changes
 			switch (change.type) {
 				case "add":
-					var id;
 					changeOccured();
-
 					mapJSON.units.push(createUnit(mapJSON.units, change.loc, change.unitType, change.user, 100));
-
 					break;
 				case "move":
 					attemptMove(mapJSON, change.unitId, change.newLocation);
@@ -192,7 +225,7 @@ function handleSync(reqBody, mapJSON) {
 					mapJSON = defaultMapJSON;
 					break;
 				case "returnToAirfield":
-					returnToAirfield(mapJSON, change.unitId, change.airfieldId);
+					returnToAirfield(mapJSON, change.unitId);
 					break;
 				case "exitAirfield":
 					exitAirfield(mapJSON, change.airfieldId, change.unitId);
@@ -217,7 +250,7 @@ function handleSync(reqBody, mapJSON) {
 		if (reqBody.username == "admin") {
 			response.mapState = mapJSON;
 		} else {
-			checkForMissingUsers(mapJSON.units);
+			checkForMissingUsers(mapJSON);
 			response.mapState = restrictMapView(mapJSON, reqBody.username);
 			response.nextTurnChange = turnChangeTime[reqBody.username];
 			response.isCorrectTurn = getNextTurnUser() == reqBody.username;
@@ -233,7 +266,7 @@ function handleSync(reqBody, mapJSON) {
 	return response;
 }
 
-function advanceTurnTimer(offset, units) {
+function advanceTurnTimer(mapJSON, offset) {
 	var previousUser;
 
 	if (offset === undefined) {
@@ -243,11 +276,19 @@ function advanceTurnTimer(offset, units) {
 	var nextUser = getNextTurnUser();
 
 	for (var unit of units) {
-		if (unit.user == nextUser && unit.deployTime > 0) {
-			unit.deployTime--;
-			if (unit.deployTime == 0) {
-				anyChanges[nextUser] = true;
-			}
+		if (unit.user == nextUser) {
+            if (unit.deployTime > 0) {
+    			unit.deployTime--;
+    			if (unit.deployTime == 0) {
+    				anyChanges[nextUser] = true;
+    			}
+            }
+            if (unit.fuelLeft != null) {
+                if (unit.fuelLeft == 0) {
+                    returnToAirfield(mapJSON, unit.id)
+                }
+                unit.fuelLeft -= 1;
+            }
 		}
 	}
 
@@ -263,12 +304,12 @@ function advanceTurnTimer(offset, units) {
 	}
 }
 
-function checkForMissingUsers(units) {
+function checkForMissingUsers(mapJSON) {
 	if (gameStarted) {
 		var t = (new Date()).getTime();
 		var u = getNextTurnUser();
 		if (turnChangeTime[u] + 2000 < t){
-			advanceTurnTimer(-2000, units);
+			advanceTurnTimer(mapJSON, -2000);
 		}
 	}
 }
@@ -311,7 +352,7 @@ function handleTurnChange(reqBody, mapJSON) {
             advanceGameTime(mapJSON);
         }
 		var d = new Date();
-		advanceTurnTimer(0, mapJSON.units);
+		advanceTurnTimer(mapJSON, 0);
 		var changes = reqBody.changes;
 		for (var change of changes) {
 			// User changes
@@ -338,7 +379,7 @@ function handleTurnChange(reqBody, mapJSON) {
 					}
 					break;
 				case "returnToAirfield":
-					returnToAirfield(mapJSON, change.unitId, change.airfieldId);
+					returnToAirfield(mapJSON, change.unitId);
 					break;
 				case "exitAirfield":
 					exitAirfield(mapJSON, change.airfieldId, change.unitId);
@@ -349,7 +390,7 @@ function handleTurnChange(reqBody, mapJSON) {
 		}
 
 		var mapRaw = JSON.stringify(mapJSON);
-		checkForMissingUsers(mapJSON.units);
+		checkForMissingUsers(mapJSON);
 		response.nextTurnChange = turnChangeTime[reqBody.username];
 		response.turnTime = isCorrectTurn;
 		response.anyChanges = anyChanges[reqBody.username];

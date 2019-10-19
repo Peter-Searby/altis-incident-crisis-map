@@ -15,6 +15,15 @@
 			"user": "Opfor",
 			"deployTime": 0,
 			"hp": 100
+		},
+		{
+			"id": 2,
+			"loc": [2826000,4814000],
+			"type": "Stealth Fighter Squadron",
+			"user": "Opfor",
+            "fuelLeft": 2,
+			"deployTime": 0,
+			"hp": 100
 		}
 	],
 	"airfields": [

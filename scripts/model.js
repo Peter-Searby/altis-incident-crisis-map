@@ -7,7 +7,7 @@ function roundLocationBy(loc, amount) {
 
 
 class Unit {
-	constructor(loc, id, type, user, deployTime, hp, properties) {
+	constructor(loc, id, type, user, deployTime, fuelLeft, hp, properties) {
 		this.loc = loc;
 		this.type = type;
 		this.user = user;
@@ -20,6 +20,7 @@ class Unit {
 		this.visualLoc = roundLocation(loc);
 		this.hp = hp;
         this.feature = null;
+        this.fuelLeft = fuelLeft;
 	}
 
     setFeature(feature) {
@@ -74,10 +75,11 @@ class Model {
     	if (originalUnit != null) {
     		unit = originalUnit;
     		unit.loc = loc;
-    		unit.deployTime = rawUnit.deployTime
+    		unit.deployTime = rawUnit.deployTime;
+            unit.fuelLeft = rawUnit.fuelLeft;
     		unit.hp = rawUnit.hp;
     	} else {
-    		unit = new Unit(loc, id, rawUnit.type, rawUnit.user, rawUnit.deployTime, rawUnit.hp, properties);
+    		unit = new Unit(loc, id, rawUnit.type, rawUnit.user, rawUnit.deployTime, rawUnit.fuelLeft, rawUnit.hp, properties);
     		this.units.push(unit);
     	}
 
@@ -114,6 +116,15 @@ class Model {
     	for (var unit of this.units) {
     		if (unit.id == id) {
     			return unit;
+    		}
+    	}
+    	return null;
+    }
+
+    getAirfieldById(id) {
+    	for (var airfield of this.airfields) {
+    		if (airfield.id == id) {
+    			return airfield;
     		}
     	}
     	return null;

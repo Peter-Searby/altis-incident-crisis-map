@@ -177,6 +177,9 @@ var DropdownControl = (function (Control) {
 				if (clickedElement.classList.contains("unitGroup")) {
 					displayDropdown([model.getUnitById(clickedElement.id)], [], lastClick);
 				}
+				if (clickedElement.classList.contains("airfieldGroup")) {
+					displayDropdown([], [model.getAirfieldById(clickedElement.id)], lastClick);
+				}
 				if (clickedElement.classList.contains("airfieldStorage")) {
 					for (var unit of selectedAirfield.units) {
 						if (clickedElement.id == unit.id) {
@@ -219,11 +222,9 @@ var DropdownControl = (function (Control) {
 				displayDropdown([selectedUnit], [], lastClick)
 				break;
             case "returnToAirfieldButton":
-				var airfield = getNearestAirfield(selectedUnit);
 				changes.push({
 					"type": "returnToAirfield",
-					"unitId": selectedUnit.id,
-					"airfieldId": airfield.id
+					"unitId": selectedUnit.id
 				});
 
                 hideDropdown();
@@ -493,10 +494,6 @@ function onUnitsChange() {
 	fogFeature.setGeometry(new Polygon([pointsOfBounds, ...cutoutsMerged]));
 }
 
-function getNearestAirfield(unit) {
-    return model.airfields[0];
-}
-
 function getMapPointType(pixel) {
 	return map.forEachLayerAtPixel(pixel, function(layer, colour) {
 		if (layer.getZIndex() == 0) {
@@ -596,8 +593,24 @@ function displayDropdown(units, airfields, pixel) {
 			`
 		}
 
-        // Unit properties
+        // Refuel time
+        if (unit.fuelLeft) {
+			var s;
+			if (unit.fuelLeft == 1) {
+				s = "";
+			} else {
+				s = "s";
+			}
+			dropdownTable.innerHTML += `
+			<tr>
+				<td><b>Returns to an airfield in ${unit.fuelLeft} turn${s}</b></td>
+			</tr>
+			`;
+        }
 
+
+        // Unit properties
+        dropdownTable.innerHTML += '</br>';
 		for (var prop in unit.properties) {
 			dropdownTable.innerHTML += `
 				<tr class="singleUnit">
@@ -721,7 +734,7 @@ function displayDropdown(units, airfields, pixel) {
     		`;
     		for (var airfield of airfields) {
     			dropdownTable.innerHTML += `
-    			<tr id=${airfield.id} class="unitGroup">
+    			<tr id=${airfield.id} class="airfieldGroup">
     				<td>${getAirfieldAffiliation(airfield)} airfield</td>
     				<td>${airfield.units.length}</td>
     			</tr>
