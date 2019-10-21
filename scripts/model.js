@@ -70,7 +70,10 @@ class Model {
     		}
     	}
 
-    	var loc = roundLocation(rawUnit.loc);
+    	var loc = null;
+		if (rawUnit.loc != null) {
+			loc = roundLocation(rawUnit.loc);
+		}
 
     	if (originalUnit != null) {
     		unit = originalUnit;

@@ -597,6 +597,7 @@ function displayDropdown(units, airfields, pixel) {
         if (unit.user == username || username == "admin") {
 
             // Refuel time
+			// TODO add display to say unit is being returned when returning manually
             if (unit.fuelLeft != null && unit.loc != null) {
     			var s;
     			if (unit.fuelLeft == 1) {
@@ -625,7 +626,7 @@ function displayDropdown(units, airfields, pixel) {
 
     		if (unit.loc == null) {
     			// Stored aircraft specifc elements
-
+				// TODO add display of when the unit is being removed at the end of the turn
     			dropdownTable.innerHTML += `
     				<tr>
     					<td/><td><button type="button" class="button" id="exitAirfieldButton">
@@ -635,7 +636,7 @@ function displayDropdown(units, airfields, pixel) {
     			`;
     		}
 
-            if (unit.properties["Domain"] == "Air") {
+            if (unit.properties && unit.properties["Domain"] == "Air") {
     			// Aircraft airfield buttons
 
                 if (airfieldNearby(unit)) {
