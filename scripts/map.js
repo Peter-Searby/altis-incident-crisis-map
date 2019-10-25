@@ -1128,11 +1128,15 @@ function keyDownEvent(event) {
 function keyUpEvent(event) {
 
 }
+function bound(a, i, b) {
+	return Math.min(Math.max(a, i), b);
+}
 
-function displayFailedAttacks(attacks) {
-	if (attacks.length != 0) {
-		notification.show(attacks.pop(), 500);
-		setTimeout(displayFailedAttacks, 500, attacks)
+function displayNotifications(notifications) {
+	if (notifications.length != 0) {
+		var t = bound(500, 10000/notifications.length, 5000);
+		notification.show(notifications.pop(), t);
+		setTimeout(displayNotifications, t, notifications)
 	}
 }
 
@@ -1190,6 +1194,10 @@ function handleResponse() {
 
 			updateTitle(mapJSON.currentTime);
 
+			if (responseJSON.notifications) {
+				displayNotifications(responseJSON.notifications);
+			}
+
 			if (username != "admin") {
 				// Handle user specific syncing
 				nextTurnChange = responseJSON.nextTurnChange;
@@ -1207,9 +1215,6 @@ function handleResponse() {
 				}
 				if (responseJSON.anyChanges) {
 					onUnitsChange();
-				}
-				if (responseJSON.failedAttacks) {
-					displayFailedAttacks(responseJSON.failedAttacks);
 				}
 			} else {
 				// Handle admin specific syncing

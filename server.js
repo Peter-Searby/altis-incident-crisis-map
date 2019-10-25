@@ -188,6 +188,8 @@ function deleteUnit(unitContainer, id) {
 function handleSync(reqBody, mapJSON) {
 	var changes = reqBody.changes;
 	var response = new Object();
+	response.notifications = notifications[reqBody.username];
+	notifications[reqBody.username] = [];
 	if (reqBody.username == "admin" || changes.length==0) {
 		for (var change of changes) {
 			// Admin changes
@@ -195,6 +197,7 @@ function handleSync(reqBody, mapJSON) {
 				case "add":
 					changeOccured();
 					mapJSON.units.push(createUnit(mapJSON.units, change.loc, change.unitType, change.user, 100, true));
+					adminNotification(`Added a ${change.unitType} for ${change.user}`);
 					break;
 				case "move":
 					attemptMove(mapJSON, change.unitId, change.newLocation);
@@ -315,6 +318,19 @@ function checkForMissingUsers(mapJSON) {
 	}
 }
 
+function getLastTurnUser() {
+	if (!gameStarted) {
+		return "";
+	}
+	var lastUser = users[0];
+	for (var u of users) {
+		if (turnChangeTime[u] > turnChangeTime[lastUser]) {
+			lastUser = u;
+		}
+	}
+	return lastUser;
+}
+
 function getNextTurnUser() {
 	if (!gameStarted) {
 		return "";
@@ -344,6 +360,17 @@ function advanceGameTime(mapJSON) {
     mapJSON["currentTime"] += 1;
 }
 
+function addNotification(lists, message) {
+	adminNotification(message);
+	for (var list of lists) {
+		list.push(message);
+	}
+}
+function adminNotification(message) {
+	notifications["admin"].push(`[${getLastTurnUser()}] `+message);
+}
+
+
 function handleTurnChange(reqBody, mapJSON) {
 	var nextUser = getNextTurnUser();
 	var isCorrectTurn = reqBody.username == nextUser;
@@ -355,6 +382,8 @@ function handleTurnChange(reqBody, mapJSON) {
 		var d = new Date();
 		advanceTurnTimer(mapJSON, 0);
 		var changes = reqBody.changes;
+		response.notifications = notifications[reqBody.username];
+		notifications[reqBody.username] = [];
 		for (var change of changes) {
 			// User changes
 			switch (change.type) {
@@ -366,28 +395,29 @@ function handleTurnChange(reqBody, mapJSON) {
 					var attacker = getUnitById(mapJSON.units, change.attackerId);
 					var defender = getUnitById(mapJSON.units, change.defenderId);
                     if (attacker == null || defender == null) {
-                        response.failedAttacks.push(`Attacking ${attacker.type} missed the defending ${defender.type}.`)
-                    } else {
-					if (!attemptAttack(attacker, defender)) {
-						if (!response.failedAttacks) {
-							response.failedAttacks = [];
-						}
-						response.failedAttacks.push(`Attacking ${attacker.type} missed the defending ${defender.type}.`)
+                        addNotification([response.notifications, notifications[defender.user]], `Attacking ${attacker.type} missed the defending ${defender.type}.`);
+                    } else if (!attemptAttack(attacker, defender)) {
+						addNotification([response.notifications, notifications[defender.user]], `Attacking ${attacker.type} missed the defending ${defender.type}.`);
 					} else {
 						if (attacker.hp <= 0) {
 							deleteUnit(mapJSON, change.attackerId);
+							addNotification([response.notifications, notifications[defender.user]], `Attacking ${attacker.type} was killed by the defending ${defender.type}.`);
 						}
 						if (defender.hp <= 0) {
 							deleteUnit(mapJSON, change.defenderId);
+							addNotification([response.notifications, notifications[defender.user]], `Attacking ${attacker.type} killed the defending ${defender.type}.`);
 						}
 					}
-                    }
 					break;
 				case "returnToAirfield":
+					var unit = getUnitById(mapJSON.units, change.unitId);
 					returnToAirfield(mapJSON, change.unitId);
+					addNotification([response.notifications], `${unit.type} was returned to the nearest airfield.`);
 					break;
 				case "exitAirfield":
+					var unit = getUnitById(getAirfieldById(mapJSON, change.airfieldId).units, change.unitId);
 					exitAirfield(mapJSON, change.airfieldId, change.unitId);
+					addNotification([response.notifications], `A ${unit.type} exitted its airfield.`);
 					break;
 				default:
 					console.log(`Unusual change requested: ${change.type}`);
@@ -423,30 +453,20 @@ function handleTurnChange(reqBody, mapJSON) {
 	return response;
 }
 
-
 users = ["Blufor", "Opfor"];
+logins = {	"admin":    "",
+		    [users[0]]: "",
+		    [users[1]]: ""};
+anyChanges = {"admin": true};
+turnChangeTime = {};
+firstSync = {"admin": true};
+notifications = {"admin": []};
 
-logins = {
-    "admin":    "",
-    [users[0]]: "",
-    [users[1]]: ""
-};
-
-anyChanges = {
-	"admin":    true,
-	[users[0]]: true,
-	[users[1]]: true,
-};
-
-turnChangeTime = {
-	[users[0]]: 0,
-	[users[1]]: 0
-};
-
-firstSync = {
-	"admin":    true,
-	[users[0]]: true,
-	[users[1]]: true
+for (user of users) {
+	anyChanges[user] = true;
+	turnChangeTime[user] = 0;
+	firstSync[user] = true;
+	notifications[user] = [];
 }
 
 function changeOccured() {
