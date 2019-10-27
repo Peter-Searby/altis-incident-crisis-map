@@ -131,7 +131,6 @@ function exitAirfield(mapJSON, airfieldId, unitId) {
 		}
 	}
 	if (unitToDelete == -1) {
-		// TODO fix bug here. on user exitting, rather than admin
 		console.log(`Invalid unit (${unitId}) deletion from airfield ${airfieldId}`);
 	} else {
 		deleteUnit(airfield, unitToDelete.id)

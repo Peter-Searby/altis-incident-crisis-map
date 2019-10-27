@@ -272,7 +272,7 @@ map = new Map({
 	layers: [
 		new TileLayer({
 			source: new OSM({
-				url: 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png'
+				url: 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png'
 			}),
 			extent: [mapMinX, mapMinY, mapMaxX, mapMaxY],
 			zIndex: 0
