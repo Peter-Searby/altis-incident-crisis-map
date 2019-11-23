@@ -288,6 +288,7 @@ function advanceTurnTimer(mapJSON, offset) {
             }
             if (unit.fuelLeft != null) {
                 if (unit.fuelLeft == 0) {
+                    addNotification([notifications[unit.user]], `A ${unit.type} was returned to the nearest airfield.`);
                     returnToAirfield(mapJSON, unit.id)
                 }
                 unit.fuelLeft -= 1;
@@ -411,7 +412,7 @@ function handleTurnChange(reqBody, mapJSON) {
 				case "returnToAirfield":
 					var unit = getUnitById(mapJSON.units, change.unitId);
 					returnToAirfield(mapJSON, change.unitId);
-					addNotification([response.notifications], `${unit.type} was returned to the nearest airfield.`);
+					addNotification([response.notifications], `A ${unit.type} was returned to the nearest airfield.`);
 					break;
 				case "exitAirfield":
 					var unit = getUnitById(getAirfieldById(mapJSON, change.airfieldId).units, change.unitId);

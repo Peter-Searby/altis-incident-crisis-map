@@ -534,6 +534,24 @@ function airfieldNearby(unit) {
     return false;
 }
 
+function isLeavingAirfield(unitId) {
+    for (var change of changes) {
+        if (change.type == "exitAirfield" && change.unitId == unitId) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function isReturningToAirfield(unitId) {
+    for (var change of changes) {
+        if (change.type == "returnToAirfield" && change.unitId == unitId) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Unit dropdown
 function displayDropdown(units, airfields, pixel) {
     var positionStyle = '';
@@ -597,8 +615,13 @@ function displayDropdown(units, airfields, pixel) {
         if (unit.user == username || username == "admin") {
 
             // Refuel time
-			// TODO add display to say unit is being returned when returning manually
-            if (unit.fuelLeft != null && unit.loc != null) {
+            if (isReturningToAirfield(unit.id)) {
+                dropdownTable.innerHTML += `
+                <tr>
+                    <td style="font-style: italic">Returning to an airfield this turn</td>
+                </tr>
+                `
+            } else if (unit.fuelLeft != null && unit.loc != null) {
     			var s;
     			if (unit.fuelLeft == 1) {
     				s = "";
@@ -626,7 +649,14 @@ function displayDropdown(units, airfields, pixel) {
 
     		if (unit.loc == null) {
     			// Stored aircraft specifc elements
-				// TODO add display of when the unit is being removed at the end of the turn
+
+                if (isLeavingAirfield(unit.id)) {
+                    dropdownTable.innerHTML += `
+        			<tr>
+        				<td style="font-style: italic">Leaving the airfield this turn</td>
+        			</tr>
+                    `
+                }
     			dropdownTable.innerHTML += `
     				<tr>
     					<td/><td><button type="button" class="button" id="exitAirfieldButton">
@@ -634,6 +664,7 @@ function displayDropdown(units, airfields, pixel) {
     					</button></td>
     				</tr>
     			`;
+
     		}
 
             if (unit.properties && unit.properties["Domain"] == "Air") {
@@ -696,10 +727,17 @@ function displayDropdown(units, airfields, pixel) {
             dropdownTable.innerHTML += '<td style="font-style: italic">empty</td>'
         }
 		for (var unit of airfields[0].units) {
+            var leaving;
+            if (isLeavingAirfield(unit.id)) {
+                leaving = `<td style="font-style: italic">(leaving)</td>`
+            } else {
+                leaving = "";
+            }
 			dropdownTable.innerHTML += `
 			<tr id=${unit.id} class="airfieldStorage">
 				<td>${unit.type}</td>
 				<td style="font-style: italic">${unit.user}</td>
+                ${leaving}
 			</tr>
 			`;
 		}
