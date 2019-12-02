@@ -16,7 +16,6 @@
     "cssnano": "^4.1.10"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "npm run-script build; node server.js",
     "build": "parcel build --public-url / index.html"
   },
