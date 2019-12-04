@@ -6,6 +6,8 @@ Required packages:
 npm packages:
 - parcel-bundler
 - expressjs
+- ol
+- ol-ext
 
 
 to run server:
