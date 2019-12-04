@@ -183,7 +183,7 @@ DropdownControl = function (Control) {
 				}
 				if (clickedElement.classList.contains("airfieldStorage")) {
 					for (let unit of selectedAirfield.units) {
-						if (clickedElement.id === unit.id) {
+						if (clickedElement.id === unit.id.toString()) {
 							displayDropdown([unit], [], lastClick);
 							break;
 						}
