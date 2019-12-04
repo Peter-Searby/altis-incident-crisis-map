@@ -457,7 +457,6 @@ function onUnitsChange() {
 
 
 	const reader = new jsts.io.WKTReader();
-
 	const writer = new jsts.io.WKTWriter();
 
 	const cutoutsMerged = [];
