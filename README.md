@@ -5,9 +5,13 @@ Required packages:
 
 npm packages:
 - parcel-bundler
+- express
 - expressjs
 - ol
 - ol-ext
+- jsts
+- fast-csv
+- body-parser
 
 
 to run server:
