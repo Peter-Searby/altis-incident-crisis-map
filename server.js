@@ -134,7 +134,6 @@ function exitAirfield(mapJSON, airfieldId, unitId) {
 	if (unitToDelete === -1) {
 		console.log(`Invalid unit (${unitId}) deletion from airfield ${airfieldId}`);
 	} else {
-		// noinspection JSUnresolvedVariable
 		deleteUnit(airfield, unitToDelete.id)
 	}
 }
@@ -172,7 +171,6 @@ function returnToAirfield(mapJSON, unitId) {
         unit.loc = null;
 		changeOccured();
 		deleteUnit(mapJSON, unitId);
-		// noinspection JSUnresolvedVariable
 		airfield.units.push(unit);
 	} else {
 		console.log(`Failed return to airfield as no airfield was found`);

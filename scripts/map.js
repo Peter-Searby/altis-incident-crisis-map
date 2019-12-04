@@ -455,9 +455,9 @@ function onUnitsChange() {
 
 	const wkt = new WKT();
 
-	// noinspection JSUnresolvedVariable
+
 	const reader = new jsts.io.WKTReader();
-	// noinspection JSUnresolvedVariable
+
 	const writer = new jsts.io.WKTWriter();
 
 	const cutoutsMerged = [];
