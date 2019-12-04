@@ -66,6 +66,7 @@ function distance(vector1, vector2) {
 	}
 	let total = 0.0;
 	for (let i in mainVector) {
+		// noinspection JSUnfilteredForInLoop
 		total += (vector1[i]-vector2[i]) ** 2;
 	}
 	return Math.sqrt(total);
@@ -169,6 +170,7 @@ DropdownControl = function (Control) {
 	DropdownControl.prototype.receiveClick = function receiveClick(event) {
 		let clickedElement = event.target;
 
+		// noinspection FallThroughInSwitchStatementJS
 		switch (clickedElement.tagName) {
 			case "TD":
 				clickedElement = clickedElement.parentNode;
@@ -324,6 +326,7 @@ map = new Map({
 });
 
 
+// noinspection JSCheckFunctionSignatures
 graticule = new Graticule({
 	style: graticuleStyle,
 	borderWidth: 1,
@@ -335,7 +338,9 @@ graticule.setMap(map);
 
 
 // Prompt dialog
+// noinspection JSCheckFunctionSignatures
 dialogPromptUser = new Dialog();
+// noinspection JSCheckFunctionSignatures
 dialogPromptPassword = new Dialog();
 
 
@@ -392,6 +397,7 @@ function getTurnManagerContent() {
 }
 
 // Turn change overlay
+// noinspection JSCheckFunctionSignatures
 turnManager = new Overlay({
 	closeBox: false,
 	className: "turn-change overlay",
@@ -449,7 +455,9 @@ function onUnitsChange() {
 
 	const wkt = new WKT();
 
+	// noinspection JSUnresolvedVariable
 	const reader = new jsts.io.WKTReader();
+	// noinspection JSUnresolvedVariable
 	const writer = new jsts.io.WKTWriter();
 
 	const cutoutsMerged = [];
@@ -574,11 +582,13 @@ function displayDropdown(units, airfields, pixel) {
 	${positionStyle}`;
 
 	const dropdownTable = document.getElementById("dropdownTable");
+	let unit;
+	let s;
 
 	if (units.length === 1 && airfields.length === 0) {
 		// Unit details
 
-		var unit = units[0];
+		unit = units[0];
 
 		if (selectedUnit !== unit) {
 			displayMoveCircle(unit);
@@ -598,7 +608,6 @@ function displayDropdown(units, airfields, pixel) {
         // Deploy time
 
 		if (username === "admin" && unit.deployTime > 0) {
-			var s;
 			if (unit.deployTime === 1) {
 				s = "";
 			} else {
@@ -622,7 +631,6 @@ function displayDropdown(units, airfields, pixel) {
                 </tr>
                 `
             } else if (unit.fuelLeft != null && unit.loc != null) {
-    			var s;
     			if (unit.fuelLeft === 1) {
     				s = "";
     			} else {
@@ -726,7 +734,7 @@ function displayDropdown(units, airfields, pixel) {
         if (airfields[0].units.length === 0) {
             dropdownTable.innerHTML += '<td style="font-style: italic">empty</td>'
         }
-		for (var unit of airfields[0].units) {
+		for (unit of airfields[0].units) {
 			let leaving;
 			if (isLeavingAirfield(unit.id)) {
                 leaving = `<td style="font-style: italic">(leaving)</td>`
@@ -756,7 +764,7 @@ function displayDropdown(units, airfields, pixel) {
     			<th>Units</th>
     		</tr>
     		`;
-    		for (var unit of units) {
+    		for (unit of units) {
     			dropdownTable.innerHTML += `
     			<tr id=${unit.id} class="unitGroup">
     				<td>${unit.type}</td>
@@ -896,7 +904,7 @@ function moveCommand(unit, loc) {
 	}
 	if (unit.moveFeature) {
 		const geo = unit.moveFeature.getGeometry();
-		var d = distance(geo.getLastCoordinate(), loc);
+		let d = distance(geo.getLastCoordinate(), loc);
 		if (inRange(unit.moveDistance+d)) {
 			unit.moveDistance+=d;
 			geo.appendCoordinate(loc);
@@ -935,28 +943,24 @@ function createUnit(loc, type, user) {
 	changes.push({type: "add", loc: loc, unitType: type, user: user});
 }
 
-function getUnitsAt(pixel) {
-	const foundUnits = [];
-	for (let unit of model.units) {
-		const unitPixel = map.getPixelFromCoordinate(unit.loc);
-		const distance = Math.hypot(unitPixel[0] - pixel[0] - 15 * unitPixel[0] / width, unitPixel[1] - pixel[1] - 4 * unitPixel[1] / height);
+function getWithinDistance(pixel, objects) {
+	let foundThings = [];
+	for (let thing of objects) {
+		const thingPixel = map.getPixelFromCoordinate(thing.loc);
+		const distance = Math.hypot(thingPixel[0] - pixel[0] - 15 * thingPixel[0] / width, thingPixel[1] - pixel[1] - 4 * thingPixel[1] / height);
 		if (distance<40) {
-			foundUnits.push(unit);
+			foundThings.push(thing);
 		}
 	}
-	return foundUnits;
+	return foundThings;
+}
+
+function getUnitsAt(pixel) {
+	return getWithinDistance(pixel, model.units);
 }
 
 function getAirfieldsAt(pixel) {
-	const foundAfs = [];
-	for (let airfield of model.airfields) {
-		const airfieldPixel = map.getPixelFromCoordinate(airfield.loc);
-		const distance = Math.hypot(airfieldPixel[0] - pixel[0] - 15 * airfieldPixel[0] / width, airfieldPixel[1] - pixel[1] - 4 * airfieldPixel[1] / height);
-		if (distance<40) {
-			foundAfs.push(airfield);
-		}
-	}
-	return foundAfs;
+	return getWithinDistance(pixel, model.airfields);
 }
 
 function cancelAttack(message) {
@@ -1027,7 +1031,7 @@ map.on('click', function (event) {
 	}
 });
 
-map.on('moveend', function (event) {
+map.on('moveend', function () {
 	updateZoom();
 	updateDropdown();
 });
@@ -1153,14 +1157,10 @@ function rightClick(e) {
 }
 
 function keyDownEvent(event) {
-	switch (event.code) {
-		case 'Backspace':
-			if (selectedUnit != null && selectedUnit.user === username) {
-				removeMove(selectedUnit);
-			}
-			break;
-		default:
-			return;
+	if (event.code === 'Backspace') {
+		if (selectedUnit != null && selectedUnit.user === username) {
+			removeMove(selectedUnit);
+		}
 	}
 }
 
@@ -1340,6 +1340,7 @@ function start() {
 	sync();
 
 	if (username === "admin") {
+		// noinspection JSCheckFunctionSignatures
 		turnTimeButton = new Button({
 			html: '<i class="material-icons">av_timer</i>',
 			className: "turnTime",
@@ -1350,6 +1351,7 @@ function start() {
 			}
 		});
 
+		// noinspection JSCheckFunctionSignatures
 		deploymentFinishButton = new Button({
 			html: '<i class="material-icons">timer</i>',
 			className: "deploymentFinish",
@@ -1360,6 +1362,7 @@ function start() {
 			}
 		});
 
+		// noinspection JSCheckFunctionSignatures
 		resetMapButton = new Button({
 			html: '<i class="material-icons">delete_forever</i>',
 			className: "resetMap",
@@ -1381,6 +1384,7 @@ function start() {
 	repeatSync = setInterval(sync, 1000);
 
 	// Title
+	// noinspection JSCheckFunctionSignatures
 	title = new Overlay({
 		closeBox: false,
 		className: "title",
