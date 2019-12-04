@@ -2,8 +2,9 @@
 
 Required packages:
 - npm
+
 npm packages:
-parcel-bundler
+- parcel-bundler
 
 
 
