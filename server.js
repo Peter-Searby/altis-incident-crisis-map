@@ -123,7 +123,6 @@ function exitAirfield(mapJSON, airfieldId, unitId) {
 	let airfield = getAirfieldById(mapJSON, airfieldId);
 	let unitToDelete = -1;
 	for (let unitId_ in airfield.units) {
-		// noinspection JSUnfilteredForInLoop
 		let unit = airfield.units[unitId_];
 		if (unit.id === unitId) {
 			unitToDelete = unit;
@@ -262,9 +261,7 @@ function handleSync(reqBody, mapJSON) {
 
 		fs.writeFileSync('data/map.json', mapRaw);
 	} else {
-		for (let change of changes) {
-			userAttemptAdminError(change.type);
-		}
+		userAttemptAdminError(change.type);
 		response = makeError("Error: User attempted admin move");
 	}
 	return response;
@@ -396,10 +393,8 @@ function handleTurnChange(reqBody, mapJSON) {
 					changeOccured();
 					let attacker = getUnitById(mapJSON.units, change.attackerId);
 					let defender = getUnitById(mapJSON.units, change.defenderId);
-                    if (attacker == null) {
-						addNotification([response.notifications, notifications[defender.user]], `Attacking unit missed the defending ${defender.type}.`);
-					} else if (defender == null) {
-                        addNotification([response.notifications], `Attacking ${attacker.type} missed a defending unit.`);
+                    if (attacker == null || defender == null) {
+                        addNotification([response.notifications, notifications[defender.user]], `Attacking ${attacker.type} missed the defending ${defender.type}.`);
                     } else if (!attemptAttack(attacker, defender)) {
 						addNotification([response.notifications, notifications[defender.user]], `Attacking ${attacker.type} missed the defending ${defender.type}.`);
 					} else {
@@ -466,7 +461,7 @@ turnChangeTime = {};
 firstSync = {"admin": true};
 notifications = {"admin": []};
 
-for (let user of users) {
+for (user of users) {
 	anyChanges[user] = true;
 	turnChangeTime[user] = 0;
 	firstSync[user] = true;
@@ -475,14 +470,12 @@ for (let user of users) {
 
 function changeOccured() {
 	for (let key in anyChanges) {
-		// noinspection JSUnfilteredForInLoop
 		anyChanges[key] = true
 	}
 }
 
 // File reading
 
-// noinspection JSCheckFunctionSignatures
 settings = JSON.parse(fs.readFileSync('settings.json'));
 
 
@@ -491,7 +484,6 @@ if (!fs.existsSync("data")) {
 }
 
 if (fs.existsSync("data/map.json")) {
-	// noinspection JSCheckFunctionSignatures
 	gameStarted = JSON.parse(fs.readFileSync('data/map.json')).gameStarted;
 } else {
 	defaultMap = fs.readFileSync('default-map.json');
@@ -508,10 +500,8 @@ app.use(bodyParser.json());
 
 app.use('/res', express.static('res'));
 
-// noinspection JSUnresolvedFunction
 app.post('/server.js', function (req, res, next) {
 	let rawdata = fs.readFileSync('data/map.json');
-	// noinspection JSCheckFunctionSignatures
 	let mapJSON = JSON.parse(rawdata);
 	let username = req.body.username;
 	let response;
