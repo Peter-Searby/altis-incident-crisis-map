@@ -855,6 +855,10 @@ function roundLocationBy(loc, amount) {
 	return [Math.round(loc[0]/amount)*amount, Math.round(loc[1]/amount)*amount];
 }
 
+function inRange(d, unit) {
+	return d <= parseInt(unit.properties["Speed"])*1000;
+}
+
 function addUnit(rawUnit) {
     var unit = model.addUnit(rawUnit, statsManager.getProperties(rawUnit.type));
 
@@ -864,6 +868,20 @@ function addUnit(rawUnit) {
     unit.setFeature(feature);
 	unitSource.addFeature(feature);
 	updateZoom();
+	if (unit.moveFeature) {
+		var geo = unit.moveFeature.getGeometry();
+		let preDistance = distance(unit.loc, geo.getFirstCoordinate());
+		if (preDistance != 0) {
+			let coords = geo.getCoordinates();
+			geo.setCoordinates([unit.loc].concat(coords));
+			if (!inRange(unit.moveDistance+preDistance, unit)) {
+				geo.setCoordinates([]);
+				displayNotifications([`A ${unit.type} has lost its move commands due to the admin moving the unit`])
+			} else {
+				unit.moveDistance += preDistance;
+			}
+		}
+	}
 	return unit;
 }
 
@@ -891,20 +909,17 @@ function addAirfield(rawAirfield) {
 }
 
 function moveCommand(unit, loc) {
-	function inRange(d) {
-		return d <= parseInt(unit.properties["Speed"])*1000;
-	}
 	if (unit.moveFeature) {
 		var geo = unit.moveFeature.getGeometry();
 		var d = distance(geo.getLastCoordinate(), loc);
-		if (inRange(unit.moveDistance+d)) {
+		if (inRange(unit.moveDistance+d, unit)) {
 			unit.moveDistance+=d;
 			geo.appendCoordinate(loc);
 			return true;
 		}
 	} else {
 		unit.moveDistance = distance(unit.loc, loc);
-		if (inRange(unit.moveDistance)) {
+		if (inRange(unit.moveDistance, unit)) {
 			var f = new Feature(new LineString([
 				unit.loc,
 				loc
