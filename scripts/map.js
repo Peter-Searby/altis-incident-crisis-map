@@ -21,7 +21,7 @@ import convexHull from 'ol-ext/geom/ConvexHull.js';
 const jsts = require('jsts');
 const StatsManager = require('./stats').StatsManager;
 const Model = require('./model').Model;
-const SEA_COLOUR = [182, 210, 236];
+const SEA_COLOUR = [212, 218, 220];
 const SEA = 1;
 const LAND = 2;
 const START_DATE = new Date(2020, 5, 6, 10);
@@ -387,7 +387,7 @@ function getTurnManagerContent() {
 	}
 
 	return `Next turn: ${nextTurnString}<br/>
-		<button id="endTurnButton" type='button'${disabledString}>
+		<button id="endTurnButton" type='button' ${disabledString}>
 			End Turn
 		</button>`;
 }
