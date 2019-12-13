@@ -2,16 +2,16 @@ const express = require('express');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const app = express();
-// const csv = require('fast-csv');
+const csv = require('fast-csv');
 const StatsManager = require('./scripts/stats').StatsManager;
 
 const PORT = 8000;
 
-let defaultMap, settings;
-let users, logins, anyChanges, turnChangeTime;
-let gameStarted;
+var defaultMap, settings;
+var users, logins, anyChanges, turnChangeTime;
+var gameStarted;
 
-let statsManager = new StatsManager();
+var statsManager = new StatsManager();
 
 
 function userAttemptAdminError(command) {
@@ -23,20 +23,20 @@ function makeError(error) {
 }
 
 function createUnit(units, loc, type, user, hp, delayed) {
-    let id;
+    var id;
     if (units) {
         id = units[units.length - 1].id + 1;
     } else {
         id = 0;
     }
-	let unit = {
+	var unit = {
 		id: id,
 		loc: loc,
 		type: type,
 		user: user,
 		hp: hp
 	};
-    if (type === "Carrier") {
+    if (type == "Carrier") {
         unit.airfieldId = id+1000;
     }
 	if (gameStarted && delayed) {
@@ -45,8 +45,8 @@ function createUnit(units, loc, type, user, hp, delayed) {
 		unit.deployTime = 0;
 	}
 
-    let refuelTime = statsManager.getProperties(type)["Turns to refuel"];
-    if (refuelTime !== "n/a") {
+    var refuelTime = statsManager.getProperties(type)["Turns to refuel"];
+    if (refuelTime != "n/a") {
         unit.fuelLeft = parseInt(refuelTime);
     }
 
@@ -54,17 +54,17 @@ function createUnit(units, loc, type, user, hp, delayed) {
 }
 
 function restrictMapView(mapJSON, user) {
-	let units = [];
+	var units = [];
 
-	for (let unit of mapJSON.units) {
-		if (unit.user === user && unit.deployTime === 0) {
+	for (var unit of mapJSON.units) {
+		if (unit.user == user && unit.deployTime == 0) {
 			units.push(unit);
-			let range = statsManager.getProperties(unit.type)["Vision"]*1000;
-			for (let unit2 of mapJSON.units) {
-                if (unit2 !== unit) {
-    				let [unit1x, unit1y] = unit.loc;
-    				let [unit2x, unit2y] = unit2.loc;
-    				if (Math.hypot(unit1x-unit2x, unit1y-unit2y) <= range && unit2.deployTime === 0) {
+			var range = statsManager.getProperties(unit.type)["Vision"]*1000;
+			for (var unit2 of mapJSON.units) {
+                if (unit2 != unit) {
+    				var [unit1x, unit1y] = unit.loc;
+    				var [unit2x, unit2y] = unit2.loc;
+    				if (Math.hypot(unit1x-unit2x, unit1y-unit2y) <= range && unit2.deployTime == 0) {
     					units.push(unit2);
     				}
                 }
@@ -77,8 +77,8 @@ function restrictMapView(mapJSON, user) {
 }
 
 function getUnitById(units, id) {
-	for (let unit of units) {
-		if (unit.id === id) {
+	for (var unit of units) {
+		if (unit.id == id) {
 			return unit;
 		}
 	}
@@ -92,8 +92,8 @@ function startGame() {
 }
 
 function getAirfieldById(mapJSON, airfieldId) {
-	for (let airfield of mapJSON.airfields) {
-		if (airfield.id === airfieldId) {
+	for (var airfield of mapJSON.airfields) {
+		if (airfield.id == airfieldId) {
 			return airfield;
 		}
 	}
@@ -106,9 +106,9 @@ function moveAirfield(mapJSON, airfieldId, loc) {
 
 function attemptMove(mapJSON, id, newLocation) {
 	changeOccured();
-	for (let unit of mapJSON.units) {
-		if (unit.id === id) {
-            if (unit.type === "Carrier") {
+	for (var unit of mapJSON.units) {
+		if (unit.id == id) {
+            if (unit.type == "Carrier") {
                 moveAirfield(mapJSON, unit.airfieldId, newLocation);
             }
             unit.loc = newLocation;
@@ -120,17 +120,17 @@ function attemptMove(mapJSON, id, newLocation) {
 
 function exitAirfield(mapJSON, airfieldId, unitId) {
 	changeOccured();
-	let airfield = getAirfieldById(mapJSON, airfieldId);
-	let unitToDelete = -1;
-	for (let unitId_ in airfield.units) {
-		let unit = airfield.units[unitId_];
-		if (unit.id === unitId) {
+	var airfield = getAirfieldById(mapJSON, airfieldId);
+	var unitToDelete = -1;
+	for (var unitId_ in airfield.units) {
+		var unit = airfield.units[unitId_];
+		if (unit.id == unitId) {
 			unitToDelete = unit;
 			mapJSON.units.push(createUnit(mapJSON.units, airfield.loc, unit.type, unit.user, unit.hp, false));
 			break;
 		}
 	}
-	if (unitToDelete === -1) {
+	if (unitToDelete == -1) {
 		console.log(`Invalid unit (${unitId}) deletion from airfield ${airfieldId}`);
 	} else {
 		deleteUnit(airfield, unitToDelete.id)
@@ -138,22 +138,24 @@ function exitAirfield(mapJSON, airfieldId, unitId) {
 }
 
 function hasCompatAirfieldAffil(airfield, user) {
-    if (airfield.units.length === 0) {
+    if (airfield.units.length == 0) {
         return true;
     } else {
-        return airfield.units[0].user === user;
+        return airfield.units[0].user == user;
     }
 }
 
 function getNearestAirfield(mapJSON, unit) {
-    let user = unit.user;
-    let loc = unit.loc;
-	let closestAirfield = null;
-    let closestAirfieldDistance = null;
-    for (let airfield of mapJSON.airfields) {
+    var user = unit.user;
+    var loc = unit.loc;
+    var airfieldFound = false;
+    var searchRadius = 0;
+    var closestAirfield = null;
+    var closestAirfieldDistance = null;
+    for (var airfield of mapJSON.airfields) {
         if (hasCompatAirfieldAffil(airfield, user)) {
-			let d = Math.hypot(airfield.loc[0] - loc[0], airfield.loc[1] - loc[1]);
-			if (closestAirfieldDistance == null || d < closestAirfieldDistance) {
+            var d = Math.hypot(airfield.loc[0] - loc[0], airfield.loc[1] - loc[1]);
+            if (closestAirfieldDistance == null || d < closestAirfieldDistance) {
                 closestAirfield = airfield;
                 closestAirfieldDistance = d;
             }
@@ -164,8 +166,8 @@ function getNearestAirfield(mapJSON, unit) {
 
 
 function returnToAirfield(mapJSON, unitId) {
-	let unit = getUnitById(mapJSON.units, unitId);
-	let airfield = getNearestAirfield(mapJSON, unit);
+    var unit = getUnitById(mapJSON.units, unitId);
+	var airfield = getNearestAirfield(mapJSON, unit);
 	if (airfield != null){
         unit.loc = null;
 		changeOccured();
@@ -179,16 +181,16 @@ function returnToAirfield(mapJSON, unitId) {
 }
 
 function deleteUnit(unitContainer, id) {
-	unitContainer.units = unitContainer.units.filter(u => u.id !== id);
+	unitContainer.units = unitContainer.units.filter(u => u.id != id);
 }
 
 function handleSync(reqBody, mapJSON) {
-	let changes = reqBody.changes;
-	let response = {};
+	var changes = reqBody.changes;
+	var response = new Object();
 	response.notifications = notifications[reqBody.username];
 	notifications[reqBody.username] = [];
-	if (reqBody.username === "admin" || changes.length===0) {
-		for (let change of changes) {
+	if (reqBody.username == "admin" || changes.length==0) {
+		for (var change of changes) {
 			// Admin changes
 			switch (change.type) {
 				case "add":
@@ -201,7 +203,7 @@ function handleSync(reqBody, mapJSON) {
 					break;
 				case "delete":
 					changeOccured();
-					let unit = getUnitById(mapJSON.units, change.unitId);
+					var unit = getUnitById(mapJSON.units, change.unitId);
 					if (unit == null) {
 						console.log(`Invalid delete made: id ${change.unitId} not found`);
 					} else {
@@ -222,7 +224,7 @@ function handleSync(reqBody, mapJSON) {
 						if (err) throw err;
 					});
 					defaultMap = fs.readFileSync('default-map.json');
-					let defaultMapJSON = JSON.parse(defaultMap);
+					defaultMapJSON = JSON.parse(defaultMap);
 					mapJSON = defaultMapJSON;
 					break;
 				case "returnToAirfield":
@@ -236,7 +238,7 @@ function handleSync(reqBody, mapJSON) {
 			}
 		}
 
-		let mapRaw = JSON.stringify(mapJSON);
+		var mapRaw = JSON.stringify(mapJSON);
 
 		response.turnTime = settings.turnTime;
 		response.anyChanges = anyChanges[reqBody.username];
@@ -248,13 +250,13 @@ function handleSync(reqBody, mapJSON) {
 			response.statsData = statsManager.getData();
 		}
 
-		if (reqBody.username === "admin") {
+		if (reqBody.username == "admin") {
 			response.mapState = mapJSON;
 		} else {
 			checkForMissingUsers(mapJSON);
 			response.mapState = restrictMapView(mapJSON, reqBody.username);
 			response.nextTurnChange = turnChangeTime[reqBody.username];
-			response.isCorrectTurn = getNextTurnUser() === reqBody.username;
+			response.isCorrectTurn = getNextTurnUser() == reqBody.username;
 		}
 
 		// console.log(`time: ${(new Date()).getTime()}, Blufor: ${turnChangeTime[users[0]]}, Opfor: ${turnChangeTime[users[1]]}`)
@@ -268,24 +270,24 @@ function handleSync(reqBody, mapJSON) {
 }
 
 function advanceTurnTimer(mapJSON, offset) {
-	let previousUser;
+	var previousUser;
 
 	if (offset === undefined) {
 		offset = 0;
 	}
-	let usersCount = users.length;
-	let nextUser = getNextTurnUser();
+	var usersCount = users.length;
+	var nextUser = getNextTurnUser();
 
-	for (let unit of mapJSON.units) {
-		if (unit.user === nextUser) {
+	for (var unit of mapJSON.units) {
+		if (unit.user == nextUser) {
             if (unit.deployTime > 0) {
     			unit.deployTime--;
-    			if (unit.deployTime === 0) {
+    			if (unit.deployTime == 0) {
     				anyChanges[nextUser] = true;
     			}
             }
             if (unit.fuelLeft != null) {
-                if (unit.fuelLeft === 0) {
+                if (unit.fuelLeft == 0) {
                     addNotification([notifications[unit.user]], `A ${unit.type} was returned to the nearest airfield.`);
                     returnToAirfield(mapJSON, unit.id)
                 }
@@ -294,12 +296,12 @@ function advanceTurnTimer(mapJSON, offset) {
 		}
 	}
 
-	let nextUserIndex = users.indexOf(nextUser);
+	var nextUserIndex = users.indexOf(nextUser);
 
-	let i = (nextUserIndex+1) % usersCount;
+	var i = (nextUserIndex+1) % usersCount;
 	turnChangeTime[users[i]] = (new Date()).getTime()+parseInt(settings.turnTime) + offset;
 
-	while (i !== nextUserIndex) {
+	while (i != nextUserIndex) {
 		previousUser = users[i];
 		i = (i+1) % usersCount;
 		turnChangeTime[users[i]] = turnChangeTime[previousUser]+parseInt(settings.turnTime);
@@ -308,8 +310,8 @@ function advanceTurnTimer(mapJSON, offset) {
 
 function checkForMissingUsers(mapJSON) {
 	if (gameStarted) {
-		let t = (new Date()).getTime();
-		let u = getNextTurnUser();
+		var t = (new Date()).getTime();
+		var u = getNextTurnUser();
 		if (turnChangeTime[u] + 2000 < t){
 			advanceTurnTimer(mapJSON, -2000);
 		}
@@ -320,8 +322,8 @@ function getLastTurnUser() {
 	if (!gameStarted) {
 		return "";
 	}
-	let lastUser = users[0];
-	for (let u of users) {
+	var lastUser = users[0];
+	for (var u of users) {
 		if (turnChangeTime[u] > turnChangeTime[lastUser]) {
 			lastUser = u;
 		}
@@ -334,8 +336,8 @@ function getNextTurnUser() {
 		return "";
 	}
 
-	let nextUser = users[0];
-	for (let u of users) {
+	var nextUser = users[0];
+	for (var u of users) {
 		if (turnChangeTime[u] < turnChangeTime[nextUser]) {
 			nextUser = u;
 		}
@@ -344,7 +346,7 @@ function getNextTurnUser() {
 }
 
 function attemptAttack(attacker, defender) {
-	let dodgeChance = statsManager.getDodgeChance(attacker.type, defender.type);
+	var dodgeChance = statsManager.getDodgeChance(attacker.type, defender.type);
 	if (Math.random()*100>=dodgeChance) {
 		defender.hp -= statsManager.getAttackStrength(attacker.type, defender.type);
 		attacker.hp -= statsManager.getDefenceStrength(attacker.type, defender.type);
@@ -360,7 +362,7 @@ function advanceGameTime(mapJSON) {
 
 function addNotification(lists, message) {
 	adminNotification(message);
-	for (let list of lists) {
+	for (var list of lists) {
 		list.push(message);
 	}
 }
@@ -370,20 +372,19 @@ function adminNotification(message) {
 
 
 function handleTurnChange(reqBody, mapJSON) {
-	let nextUser = getNextTurnUser();
-	let isCorrectTurn = reqBody.username === nextUser;
-	let response = {};
+	var nextUser = getNextTurnUser();
+	var isCorrectTurn = reqBody.username == nextUser;
+	var response = new Object();
 	if (isCorrectTurn) {
-        if (nextUser === users[users.length-1]) {
+        if (nextUser == users[users.length-1]) {
             advanceGameTime(mapJSON);
         }
-		// let d = new Date();
+		var d = new Date();
 		advanceTurnTimer(mapJSON, 0);
-		let changes = reqBody.changes;
+		var changes = reqBody.changes;
 		response.notifications = notifications[reqBody.username];
 		notifications[reqBody.username] = [];
-		for (let change of changes) {
-			let unit;
+		for (var change of changes) {
 			// User changes
 			switch (change.type) {
 				case "move":
@@ -391,8 +392,8 @@ function handleTurnChange(reqBody, mapJSON) {
 					break;
 				case "attack":
 					changeOccured();
-					let attacker = getUnitById(mapJSON.units, change.attackerId);
-					let defender = getUnitById(mapJSON.units, change.defenderId);
+					var attacker = getUnitById(mapJSON.units, change.attackerId);
+					var defender = getUnitById(mapJSON.units, change.defenderId);
                     if (attacker == null || defender == null) {
                         addNotification([response.notifications, notifications[defender.user]], `Attacking ${attacker.type} missed the defending ${defender.type}.`);
                     } else if (!attemptAttack(attacker, defender)) {
@@ -409,12 +410,12 @@ function handleTurnChange(reqBody, mapJSON) {
 					}
 					break;
 				case "returnToAirfield":
-					unit = getUnitById(mapJSON.units, change.unitId);
+					var unit = getUnitById(mapJSON.units, change.unitId);
 					returnToAirfield(mapJSON, change.unitId);
 					addNotification([response.notifications], `A ${unit.type} was returned to the nearest airfield.`);
 					break;
 				case "exitAirfield":
-					unit = getUnitById(getAirfieldById(mapJSON, change.airfieldId).units, change.unitId);
+					var unit = getUnitById(getAirfieldById(mapJSON, change.airfieldId).units, change.unitId);
 					exitAirfield(mapJSON, change.airfieldId, change.unitId);
 					addNotification([response.notifications], `A ${unit.type} exitted its airfield.`);
 					break;
@@ -423,13 +424,13 @@ function handleTurnChange(reqBody, mapJSON) {
 			}
 		}
 
-		let mapRaw = JSON.stringify(mapJSON);
+		var mapRaw = JSON.stringify(mapJSON);
 		checkForMissingUsers(mapJSON);
 		response.nextTurnChange = turnChangeTime[reqBody.username];
 		response.turnTime = isCorrectTurn;
 		response.anyChanges = anyChanges[reqBody.username];
 		response.usersList = users;
-		if (reqBody.username === "admin") {
+		if (reqBody.username == "admin") {
 			response.mapState =  mapJSON;
 		} else {
 			response.mapState = restrictMapView(mapJSON, reqBody.username);
@@ -445,7 +446,7 @@ function handleTurnChange(reqBody, mapJSON) {
 		response.isCorrectTurn = isCorrectTurn;
 		response.anyChanges = anyChanges[reqBody.username];
 
-		if (reqBody.username === "admin") {
+		if (reqBody.username == "admin") {
 			response.usersList = users;
 		}
 	}
@@ -469,7 +470,7 @@ for (user of users) {
 }
 
 function changeOccured() {
-	for (let key in anyChanges) {
+	for (var key in anyChanges) {
 		anyChanges[key] = true
 	}
 }
@@ -501,14 +502,14 @@ app.use(bodyParser.json());
 app.use('/res', express.static('res'));
 
 app.post('/server.js', function (req, res, next) {
-	let rawdata = fs.readFileSync('data/map.json');
-	let mapJSON = JSON.parse(rawdata);
-	let username = req.body.username;
-	let response;
-	if (logins[username] === req.body.password) {
-		if (req.body.requestType === "sync") {
+	var rawdata = fs.readFileSync('data/map.json');
+	var mapJSON = JSON.parse(rawdata);
+	var username = req.body.username;
+	if (logins[username] == req.body.password) {
+		var response;
+		if (req.body.requestType == "sync") {
 			response = handleSync(req.body, mapJSON);
-		} else if (req.body.requestType === "turnChange") {
+		} else if (req.body.requestType == "turnChange") {
 			response = handleTurnChange(req.body, mapJSON);
 		} else {
 			console.log(`Invalid request made: ${req.body.requestType}`);
@@ -521,6 +522,6 @@ app.post('/server.js', function (req, res, next) {
 	res.send(JSON.stringify(response));
 	anyChanges[username] = false;
 	next();
-});
+})
 
 app.listen(PORT);

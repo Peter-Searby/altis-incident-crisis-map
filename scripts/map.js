@@ -1,17 +1,18 @@
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
-import {Point, LineString, Circle, Polygon} from 'ol/geom.js';
+import {MultiPoint, Point, LineString, Circle, Polygon} from 'ol/geom.js';
 import TileLayer from 'ol/layer/Tile.js';
 import OSM from 'ol/source/OSM.js';
 import {Circle as CircleStyle, Fill, Stroke, Style, Icon} from 'ol/style.js';
+import Text from 'ol/style/Text';
 import Feature from 'ol/Feature';
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
 import WKT from 'ol/format/WKT';
 import {defaults as defaultControls, Control} from 'ol/control.js';
-// import {defaults as defaultInteractions} from 'ol/interaction.js';
+import {defaults as defaultInteractions} from 'ol/interaction.js';
 import Graticule from 'ol-ext/control/Graticule.js';
-// import {toLonLat} from 'ol/proj.js';
+import {toLonLat} from 'ol/proj.js';
 import Button from 'ol-ext/control/Button.js';
 import Dialog from 'ol-ext/control/Dialog.js';
 import Overlay from 'ol-ext/control/Overlay.js';
@@ -135,7 +136,7 @@ class UnitGroup {
 	}
 
 	addUnit(unit) {
-		if (this.units.length === 1) {
+		if (this.units.length == 1) {
 			hideUnit(this.units[0]);
 			this.feature = new Feature(new Point(unit.visualLoc));
 			this.feature.setStyle(pointStyle);
@@ -181,7 +182,7 @@ DropdownControl = function (Control) {
 				}
 				if (clickedElement.classList.contains("airfieldStorage")) {
 					for (let unit of selectedAirfield.units) {
-						if (clickedElement.id === unit.id.toString()) {
+						if (clickedElement.id == unit.id) {
 							displayDropdown([unit], [], lastClick);
 							break;
 						}
@@ -218,16 +219,16 @@ DropdownControl = function (Control) {
 				}
 				selectedUnit.attackFeature = null;
 				deleteAnyOldAttacks(selectedUnit.id);
-				displayDropdown([selectedUnit], [], lastClick);
+				displayDropdown([selectedUnit], [], lastClick)
 				break;
-			case "returnToAirfieldButton":
+            case "returnToAirfieldButton":
 				changes.push({
 					"type": "returnToAirfield",
 					"unitId": selectedUnit.id
 				});
 
-				hideDropdown();
-				break;
+                hideDropdown();
+                break;
 			case "exitAirfieldButton":
 				changes.push({
 					"type": "exitAirfield",
@@ -331,7 +332,7 @@ graticule = new Graticule({
 	projection: 'EPSG:3857',
 });
 
-graticule.setMap(map);
+graticule.setMap(map)
 
 
 // Prompt dialog
@@ -373,20 +374,20 @@ function startAttacking() {
 
 
 function getTurnManagerContent() {
-	let nextTurnString = "never";
+	var nextTurnString = "never";
 
-	if (nextTurnChange != null && nextTurnChange !== 0) {
+	if (nextTurnChange != null && nextTurnChange != 0) {
 		nextTurnString = `${Math.round((nextTurnChange-(new Date()).getTime())/1000)}s`;
 	}
 
-	let disabledString = "";
+	var disabledString = "";
 
 	if (!isUsersTurn) {
-		disabledString = "disabled";
+		disabledString = " disabled";
 	}
 
 	return `Next turn: ${nextTurnString}<br/>
-		<button id="endTurnButton" type='button' ${disabledString}>
+		<button id="endTurnButton" type='button'${disabledString}>
 			End Turn
 		</button>`;
 }
@@ -406,14 +407,13 @@ document.addEventListener('keydown', keyDownEvent);
 document.addEventListener('keyup', keyUpEvent);
 
 map.setSize([width, height*0.98]);
-map.on('postcompose', function() {map.render()});
+map.on('postcompose', function(event) {map.render()});
 map.render();
 
 updateZoom();
 
 function onUnitsChange() {
-	let i;
-	const pointsOfBounds = [
+	var pointsOfBounds = [
 		[mapMinX, mapMinY],
 		[mapMaxX, mapMinY],
 		[mapMaxX, mapMaxY],
@@ -422,23 +422,23 @@ function onUnitsChange() {
 	];
 	const cutouts = [];
 	for (let unit of model.units) {
-		if (unit.user === username) {
+		if (unit.user == username) {
 			const r = parseInt(unit.properties["Vision"]);
 			const p = unit.loc[0] / 1000;
 			const q = unit.loc[1] / 1000;
 
-			const pts = [];
-			for (let x of [...Array(2*(r+2)).keys()].map(i => i - r-2 + p)) {
-				for (let y of [...Array(2*(r+1)).keys()].map(i => i - r-1 + q)) {
+			var pts = [];
+			for (var x of [...Array(2*(r+2)).keys()].map(i => i - r-2 + p)) {
+				for (var y of [...Array(2*(r+1)).keys()].map(i => i - r-1 + q)) {
 					if (r ** 2 >= (x-p) ** 2 + (y-q) ** 2) {
 						pts.push([x*1000,y*1000]);
 					}
 				}
 			}
-			const cH = convexHull(pts);
+			var cH = convexHull(pts);
 
-			let str = "POLYGON ((";
-			for (let coord of cH) {
+			var str = "POLYGON ((";
+			for (var coord of cH) {
 				str+=`${coord[0]} ${coord[1]}, `;
 			}
 			str+= `${pts[0][0]} ${pts[0][1]}))`;
@@ -447,24 +447,24 @@ function onUnitsChange() {
 		}
 	}
 
-	const wkt = new WKT();
+	var wkt = new WKT();
 
-	const reader = new jsts.io.WKTReader();
-	const writer = new jsts.io.WKTWriter();
+	var reader = new jsts.io.WKTReader();
+	var writer = new jsts.io.WKTWriter();
 
-	const cutoutsMerged = [];
-	for (i in cutouts) {
+	var cutoutsMerged = [];
+	for (var i in cutouts) {
 		cutouts[i] = reader.read(cutouts[i]);
 
-		if (cutoutsMerged.length === 0) {
+		if (cutoutsMerged.length == 0) {
 			cutoutsMerged.push(cutouts[i]);
 		} else {
-			let lastMerge = -1;
+			var lastMerge = -1;
 
-			for (let j in cutoutsMerged) {
+			for (var j in cutoutsMerged) {
 				if (cutoutsMerged[j] != null) {
 					if (!cutouts[i].intersection(cutoutsMerged[j]).isEmpty()) {
-						if (lastMerge !== -1) {
+						if (lastMerge != -1) {
 							cutoutsMerged[lastMerge] = cutoutsMerged[j].union(cutoutsMerged[lastMerge].union(cutouts[i]));
 							cutoutsMerged[j] = null;
 						} else {
@@ -475,13 +475,13 @@ function onUnitsChange() {
 				}
 			}
 
-			if (lastMerge === -1) {
+			if (lastMerge == -1) {
 				cutoutsMerged.push(cutouts[i]);
 			}
 		}
 	}
 
-	for (i in cutoutsMerged) {
+	for (var i in cutoutsMerged) {
 		if (cutoutsMerged[i] != null) {
 			cutoutsMerged[i] = writer.write(cutoutsMerged[i]);
 			cutoutsMerged[i] = wkt.readGeometry(cutoutsMerged[i]);
@@ -496,8 +496,8 @@ function onUnitsChange() {
 
 function getMapPointType(pixel) {
 	return map.forEachLayerAtPixel(pixel, function(layer, colour) {
-		if (layer.getZIndex() === 0) {
-			const d = distance(colour, SEA_COLOUR);
+		if (layer.getZIndex() == 0) {
+			var d = distance(colour, SEA_COLOUR);
 			if (d < 10) {
 				return SEA;
 			} else {
@@ -508,16 +508,16 @@ function getMapPointType(pixel) {
 }
 
 function displayMoveCircle(unit) {
-	if (unit.user === username && unit.properties) {
-		const rad = parseInt(unit.properties["Speed"]) * 1000;
+	if (unit.user == username && unit.properties) {
+		var rad = parseInt(unit.properties["Speed"])*1000;
 		moveCircleSource.clear();
-		const moveCircleFeature = new Feature(new Circle(unit.loc, rad));
+		var moveCircleFeature = new Feature(new Circle(unit.loc, rad));
 		moveCircleSource.addFeature(moveCircleFeature);
 	}
 }
 
 function getAirfieldAffiliation(airfield) {
-    if (airfield.units.length === 0) {
+    if (airfield.units.length == 0) {
         return "Neutral";
     } else {
         return airfield.units[0].user;
@@ -525,9 +525,9 @@ function getAirfieldAffiliation(airfield) {
 }
 
 function airfieldNearby(unit) {
-    for (let airfield of model.airfields) {
-		const afil = getAirfieldAffiliation(airfield);
-		if (afil === "Neutral" || afil === unit.user) {
+    for (var airfield of model.airfields) {
+        var afil = getAirfieldAffiliation(airfield)
+        if (afil == "Neutral" || afil == unit.user) {
             return true;
         }
     }
@@ -535,8 +535,8 @@ function airfieldNearby(unit) {
 }
 
 function isLeavingAirfield(unitId) {
-    for (let change of changes) {
-        if (change.type === "exitAirfield" && change.unitId === unitId) {
+    for (var change of changes) {
+        if (change.type == "exitAirfield" && change.unitId == unitId) {
             return true;
         }
     }
@@ -544,8 +544,8 @@ function isLeavingAirfield(unitId) {
 }
 
 function isReturningToAirfield(unitId) {
-    for (let change of changes) {
-        if (change.type === "returnToAirfield" && change.unitId === unitId) {
+    for (var change of changes) {
+        if (change.type == "returnToAirfield" && change.unitId == unitId) {
             return true;
         }
     }
@@ -554,9 +554,9 @@ function isReturningToAirfield(unitId) {
 
 // Unit dropdown
 function displayDropdown(units, airfields, pixel) {
-	let positionStyle = '';
+    var positionStyle = '';
 
-	if (2*pixel[0] < width) {
+    if (2*pixel[0] < width) {
         positionStyle += `left: ${pixel[0]}px;`;
     } else {
         positionStyle += `right: ${width-pixel[0]}px;`;
@@ -573,14 +573,14 @@ function displayDropdown(units, airfields, pixel) {
 	display:block;
 	${positionStyle}`;
 
-	const dropdownTable = document.getElementById("dropdownTable");
+	var dropdownTable = document.getElementById("dropdownTable");
 
-	if (units.length === 1 && airfields.length === 0) {
+	if (units.length == 1 && airfields.length == 0) {
 		// Unit details
 
 		var unit = units[0];
 
-		if (selectedUnit !== unit) {
+		if (selectedUnit != unit) {
 			displayMoveCircle(unit);
 			selectedUnit = unit;
 		}
@@ -597,9 +597,9 @@ function displayDropdown(units, airfields, pixel) {
 
         // Deploy time
 
-		if (username === "admin" && unit.deployTime > 0) {
+		if (username == "admin" && unit.deployTime > 0) {
 			var s;
-			if (unit.deployTime === 1) {
+			if (unit.deployTime == 1) {
 				s = "";
 			} else {
 				s = "s";
@@ -612,7 +612,7 @@ function displayDropdown(units, airfields, pixel) {
 		}
 
         // Private info
-        if (unit.user === username || username === "admin") {
+        if (unit.user == username || username == "admin") {
 
             // Refuel time
             if (isReturningToAirfield(unit.id)) {
@@ -623,7 +623,7 @@ function displayDropdown(units, airfields, pixel) {
                 `
             } else if (unit.fuelLeft != null && unit.loc != null) {
     			var s;
-    			if (unit.fuelLeft === 1) {
+    			if (unit.fuelLeft == 1) {
     				s = "";
     			} else {
     				s = "s";
@@ -638,7 +638,7 @@ function displayDropdown(units, airfields, pixel) {
 
             // Unit properties
             dropdownTable.innerHTML += '</br>';
-    		for (let prop in unit.properties) {
+    		for (var prop in unit.properties) {
     			dropdownTable.innerHTML += `
     				<tr class="singleUnit">
     					<td>${prop}</td>
@@ -667,7 +667,7 @@ function displayDropdown(units, airfields, pixel) {
 
     		}
 
-            if (unit.properties && unit.properties["Domain"] === "Air") {
+            if (unit.properties && unit.properties["Domain"] == "Air") {
     			// Aircraft airfield buttons
 
                 if (airfieldNearby(unit)) {
@@ -681,7 +681,7 @@ function displayDropdown(units, airfields, pixel) {
                 }
             }
         }
-		if (username === "admin") {
+		if (username == "admin") {
             // Delete unit button
 			dropdownTable.innerHTML += `
 			<tr>
@@ -690,10 +690,10 @@ function displayDropdown(units, airfields, pixel) {
                 </button></td>
 			</tr>
 			`
-		} else if (username === selectedUnit.user){
+		} else if (username == selectedUnit.user){
 
             // Attack and cancel attack buttons
-			let cancelAttackButtonString = "</td>";
+			var cancelAttackButtonString = "</td>";
 			if (selectedUnit.attackFeature) {
 				cancelAttackButtonString = `<td><button type="button" class="button" id="cancelAttackButton">
                     Cancel attack
@@ -708,7 +708,7 @@ function displayDropdown(units, airfields, pixel) {
 			</tr>
 			`
 		}
-	} else if (airfields.length === 1 && units.length === 0){
+	} else if (airfields.length == 1 && units.length == 0){
         //Airfield details
 
 		if (selectedUnit != null) {
@@ -723,12 +723,12 @@ function displayDropdown(units, airfields, pixel) {
 			<th>Airfield</th>
 		</tr>
 		`;
-        if (airfields[0].units.length === 0) {
+        if (airfields[0].units.length == 0) {
             dropdownTable.innerHTML += '<td style="font-style: italic">empty</td>'
         }
 		for (var unit of airfields[0].units) {
-			let leaving;
-			if (isLeavingAirfield(unit.id)) {
+            var leaving;
+            if (isLeavingAirfield(unit.id)) {
                 leaving = `<td style="font-style: italic">(leaving)</td>`
             } else {
                 leaving = "";
@@ -774,7 +774,7 @@ function displayDropdown(units, airfields, pixel) {
     			<th>Airfields</th><th>Contents</th>
     		</tr>
     		`;
-    		for (let airfield of airfields) {
+    		for (var airfield of airfields) {
     			dropdownTable.innerHTML += `
     			<tr id=${airfield.id} class="airfieldGroup">
     				<td>${getAirfieldAffiliation(airfield)} airfield</td>
@@ -794,14 +794,14 @@ function displayRightDropdown(pixel) {
 	left: ${pixel[0]}px;
 	display:block;
 	`;
-	const dropdownTable = document.getElementById("dropdownTable");
-	let str = `
+	var dropdownTable = document.getElementById("dropdownTable");
+	 var str = `
 	<tr class="dropdownHeader">
 		<th>New Unit</th>
 	</tr><tr>
 		<td>type:</td><td><select id="typeEntry">
 	`;
-	for (let type of statsManager.getTypes()) {
+	for (var type of statsManager.getTypes()) {
 		str += `<option value="${type}">${type}</option>`;
 	}
 
@@ -811,7 +811,7 @@ function displayRightDropdown(pixel) {
 	</tr><tr>
 		<td>type:</td><td><select id="userEntry">
 	`;
-	for (let user of model.usersList) {
+	for (var user of model.usersList) {
 		str += `<option value="${user}">${user}</option>`;
 	}
 
@@ -834,8 +834,8 @@ function hideDropdown() {
 
 function updateDropdown() {
 	if (selectedUnit != null) {
-		let loc;
-		if (selectedUnit.loc) {
+        var loc;
+        if (selectedUnit.loc) {
             loc = selectedUnit.loc;
         } else {
             loc = selectedAirfield.loc;
@@ -851,15 +851,15 @@ function roundLocation(loc) {
 	return [Math.round(loc[0]/1000)*1000, Math.round(loc[1]/1000)*1000];
 }
 
-// function roundLocationBy(loc, amount) {
-// 	return [Math.round(loc[0]/amount)*amount, Math.round(loc[1]/amount)*amount];
-// }
+function roundLocationBy(loc, amount) {
+	return [Math.round(loc[0]/amount)*amount, Math.round(loc[1]/amount)*amount];
+}
 
 function addUnit(rawUnit) {
-	const unit = model.addUnit(rawUnit, statsManager.getProperties(rawUnit.type));
+    var unit = model.addUnit(rawUnit, statsManager.getProperties(rawUnit.type));
 
-	const feature = new Feature(new Point(unit.loc));
-	feature.setId(rawUnit.id);
+    var feature = new Feature(new Point(unit.loc));
+    feature.setId(rawUnit.id);
     feature.setStyle(unitStyleGenerator(unit.type, unit.user));
     unit.setFeature(feature);
 	unitSource.addFeature(feature);
@@ -885,7 +885,7 @@ function moveUnit(unit, loc) {
 
 function addAirfield(rawAirfield) {
     model.addAirfield(rawAirfield);
-	const feature = new Feature(new Point(rawAirfield.loc));
+    var feature = new Feature(new Point(rawAirfield.loc));
 	feature.setStyle(airfieldStyle);
     airfieldsSource.addFeature(feature);
 }
@@ -895,7 +895,7 @@ function moveCommand(unit, loc) {
 		return d <= parseInt(unit.properties["Speed"])*1000;
 	}
 	if (unit.moveFeature) {
-		const geo = unit.moveFeature.getGeometry();
+		var geo = unit.moveFeature.getGeometry();
 		var d = distance(geo.getLastCoordinate(), loc);
 		if (inRange(unit.moveDistance+d)) {
 			unit.moveDistance+=d;
@@ -905,7 +905,7 @@ function moveCommand(unit, loc) {
 	} else {
 		unit.moveDistance = distance(unit.loc, loc);
 		if (inRange(unit.moveDistance)) {
-			const f = new Feature(new LineString([
+			var f = new Feature(new LineString([
 				unit.loc,
 				loc
 			]));
@@ -922,8 +922,8 @@ function moveCommand(unit, loc) {
 
 function removeMove(unit) {
 	if (unit.moveFeature) {
-		const geo = unit.moveFeature.getGeometry();
-		const coords = geo.getCoordinates();
+		var geo = unit.moveFeature.getGeometry();
+		var coords = geo.getCoordinates();
 		if (coords.length >= 2) {
 			unit.moveDistance -= distance(coords[coords.length-1], coords[coords.length-2]);
 			geo.setCoordinates(coords.slice(0, coords.length-1))
@@ -936,10 +936,10 @@ function createUnit(loc, type, user) {
 }
 
 function getUnitsAt(pixel) {
-	const foundUnits = [];
-	for (let unit of model.units) {
-		const unitPixel = map.getPixelFromCoordinate(unit.loc);
-		const distance = Math.hypot(unitPixel[0] - pixel[0] - 15 * unitPixel[0] / width, unitPixel[1] - pixel[1] - 4 * unitPixel[1] / height);
+	var foundUnits = [];
+	for (var unit of model.units) {
+		var unitPixel = map.getPixelFromCoordinate(unit.loc);
+		var distance = Math.hypot(unitPixel[0]-pixel[0]-15*unitPixel[0]/width, unitPixel[1] - pixel[1]-4*unitPixel[1]/height);
 		if (distance<40) {
 			foundUnits.push(unit);
 		}
@@ -948,10 +948,10 @@ function getUnitsAt(pixel) {
 }
 
 function getAirfieldsAt(pixel) {
-	const foundAfs = [];
-	for (let airfield of model.airfields) {
-		const airfieldPixel = map.getPixelFromCoordinate(airfield.loc);
-		const distance = Math.hypot(airfieldPixel[0] - pixel[0] - 15 * airfieldPixel[0] / width, airfieldPixel[1] - pixel[1] - 4 * airfieldPixel[1] / height);
+	var foundAfs = [];
+	for (var airfield of model.airfields) {
+		var airfieldPixel = map.getPixelFromCoordinate(airfield.loc);
+		var distance = Math.hypot(airfieldPixel[0]-pixel[0]-15*airfieldPixel[0]/width, airfieldPixel[1] - pixel[1]-4*airfieldPixel[1]/height);
 		if (distance<40) {
 			foundAfs.push(airfield);
 		}
@@ -967,8 +967,8 @@ function cancelAttack(message) {
 }
 
 function deleteAnyOldAttacks(id) {
-	for (let i in changes) {
-		if (changes[i].type === "attack" && changes[i].attackerId === id) {
+	for (var i in changes) {
+		if (changes[i].type == "attack" && changes[i].attackerId == id) {
 			changes = changes.splice(i, 1);
 		}
 	}
@@ -976,14 +976,14 @@ function deleteAnyOldAttacks(id) {
 
 
 function attemptAttack(defendingUnit) {
-	if (attackingUnit.user === username && defendingUnit.user !== username) {
+	if (attackingUnit.user == username && defendingUnit.user != username) {
 		if (distance(attackingUnit.loc, defendingUnit.loc) <= attackingUnit.properties["Attack Range"] * 1000) {
 			// Make attack
 			deleteAnyOldAttacks(attackingUnit.id);
 			changes.push({type: "attack", attackerId: attackingUnit.id, defenderId: defendingUnit.id});
 			attacking = false;
 			notification.show("Attack planned");
-			const f = new Feature(new LineString([
+			var f = new Feature(new LineString([
 				attackingUnit.loc,
 				defendingUnit.loc
 			]));
@@ -999,22 +999,22 @@ function attemptAttack(defendingUnit) {
 }
 
 map.on('click', function (event) {
-	const unitsUnder = getUnitsAt(event.pixel);
-	const airfieldsUnder = getAirfieldsAt(event.pixel);
-	if (unitsUnder.length+airfieldsUnder.length !== 0) {
+	var unitsUnder = getUnitsAt(event.pixel);
+    var airfieldsUnder = getAirfieldsAt(event.pixel);
+	if (unitsUnder.length+airfieldsUnder.length != 0) {
 		if (attacking) {
-			if (unitsUnder.length === 0) {
+			if (unitsUnder.length == 0) {
     			cancelAttack("No unit there");
-            } else if (unitsUnder.length === 1) {
+            } else if (unitsUnder.length == 1) {
 				attemptAttack(unitsUnder[0]);
 			} else {
 				notification.show("Too many units under mouse. Zoom in for greater precision");
 			}
 		} else {
-            if (airfieldsUnder.length === 0) {
+            if (airfieldsUnder.length == 0) {
                 selectedAirfield = null;
             }
-            if (unitsUnder.length === 0) {
+            if (unitsUnder.length == 0) {
                 selectedUnit = null;
             }
 			displayDropdown(unitsUnder, airfieldsUnder, event.pixel);
@@ -1033,8 +1033,7 @@ map.on('moveend', function (event) {
 });
 
 function updateZoom() {
-	let gridWidth;
-
+	var gridWidth;
 	function setGraticuleWidth(width) {
 		graticule.setStyle(new Style({
 			stroke: new Stroke({
@@ -1044,7 +1043,7 @@ function updateZoom() {
 		}));
 	}
 
-	const zoom = map.getView().getZoom();
+	var zoom = map.getView().getZoom();
 
 	if (zoom >= 13) {
 		gridWidth = 1000;
@@ -1064,12 +1063,12 @@ function updateZoom() {
 		gridWidth = 200000;
 	}
 	setGraticuleWidth((Math.exp(zoom-4)-1)/20000);
-	const unitGroups = {};
+	var unitGroups = new Object();
 	unitSource.clear();
-	for (let unit of model.units) {
+	for (var unit of model.units) {
 		unit.updateZoom(gridWidth, Point);
-		const x = unit.visualLoc[0].toString();
-		const y = unit.visualLoc[1].toString();
+		var x = unit.visualLoc[0].toString();
+		var y = unit.visualLoc[1].toString();
 		if (unitGroups[y]) {
 			if (unitGroups[y][x]) {
 				unitGroups[y][x].addUnit(unit);
@@ -1078,7 +1077,7 @@ function updateZoom() {
 				displayUnit(unit);
 			}
 		} else {
-			unitGroups[y] = {};
+			unitGroups[y] = new Object();
 			unitGroups[y][x] = new UnitGroup(unit);
 			displayUnit(unit);
 		}
@@ -1086,23 +1085,23 @@ function updateZoom() {
 }
 
 function validGroundBetween(startLoc, endLoc) {
-	let ground;
+	var ground;
 
 	startLoc = map.getPixelFromCoordinate(startLoc);
 	endLoc = map.getPixelFromCoordinate(endLoc);
 
 	function getSegmentOfLength(p1, p2, l) {
-		const totalLength = distance(p1, p2);
+		var totalLength = distance(p1, p2);
 		return [(p2[0]-p1[0])*l/totalLength, (p2[1]-p1[1])*l/totalLength]
 	}
 
-	const segment = getSegmentOfLength(startLoc, endLoc, 1);
-	let point = startLoc;
+	var segment = getSegmentOfLength(startLoc, endLoc, 1);
+	var point = startLoc;
 	while (distance(point, startLoc) < distance(endLoc, startLoc)) {
 		ground = getMapPointType(point);
 
-		if ((ground===SEA && 'Land'===selectedUnit.properties["Domain"]) ||
-		(ground===LAND && 'Sea'===selectedUnit.properties["Domain"])) {
+		if ((ground==SEA && 'Land'==selectedUnit.properties["Domain"]) ||
+		(ground==LAND && 'Sea'==selectedUnit.properties["Domain"])) {
 			return false;
 		}
 		point = [point[0]+segment[0], point[1]+segment[1]];
@@ -1113,19 +1112,19 @@ function validGroundBetween(startLoc, endLoc) {
 
 function rightClick(e) {
 	e.preventDefault();
-	const loc = roundLocation(map.getCoordinateFromPixel([e.clientX, e.clientY]));
+	var loc = roundLocation(map.getCoordinateFromPixel([e.clientX, e.clientY]));
 	if (selectedUnit != null) {
-		const u = selectedUnit;
-		let allowed = false;
-		if (username === "admin") {
+		var u = selectedUnit;
+		var allowed = false;
+		if (username == "admin") {
 			moveUnit(selectedUnit, loc);
 			hideDropdown();
 			allowed = true;
 		} else {
 
-			const validGround = validGroundBetween(selectedUnit.loc, loc);
+			var validGround = validGroundBetween(selectedUnit.loc, loc);
 
-			if (selectedUnit.user === username && validGround) {
+			if (selectedUnit.user == username && validGround) {
 				allowed = moveCommand(selectedUnit, loc);
 				if (isFirst('move')) {
 					notification.show("You can continue to add moves with a right click. <br/>To remove the last move press Backspace", 5000);
@@ -1134,7 +1133,7 @@ function rightClick(e) {
 					notification.show(`Units can only travel as far as their speed (km) each turn`);
 				}
 			}
-			if (selectedUnit.user !== username) {
+			if (selectedUnit.user != username) {
 				notification.show(`This is not your unit`);
 			}
 			if (!validGround) {
@@ -1145,7 +1144,7 @@ function rightClick(e) {
 			changes.push({type: "move", unitId: u.id, newLocation: loc});
 		}
 	} else {
-		if (username === "admin") {
+		if (username == "admin") {
 			dropdownLocation = loc;
 			displayRightDropdown([e.clientX, e.clientY]);
 		}
@@ -1155,7 +1154,7 @@ function rightClick(e) {
 function keyDownEvent(event) {
 	switch (event.code) {
 		case 'Backspace':
-			if (selectedUnit != null && selectedUnit.user === username) {
+			if (selectedUnit != null && selectedUnit.user == username) {
 				removeMove(selectedUnit);
 			}
 			break;
@@ -1172,21 +1171,20 @@ function bound(a, i, b) {
 }
 
 function displayNotifications(notifications) {
-	if (notifications.length !== 0) {
-		const t = bound(500, 10000 / notifications.length, 5000);
+	if (notifications.length != 0) {
+		var t = bound(500, 10000/notifications.length, 5000);
 		notification.show(notifications.pop(), t);
 		setTimeout(displayNotifications, t, notifications)
 	}
 }
 
 function updateTitle(time) {
-	const currentTime = new Date(time * 3600000 + START_DATE.getTime());
-	const d = currentTime.getDate();
-	const mo = currentTime.getMonth();
-	const y = currentTime.getFullYear() - 2000;
-	const h = currentTime.getHours();
-	const mi = currentTime.getMinutes();
-
+	var currentTime = new Date(time*3600000+START_DATE.getTime());
+	var d = currentTime.getDate();
+	var mo = currentTime.getMonth();
+	var y = currentTime.getFullYear()-2000;
+	var h = currentTime.getHours();
+	var mi = currentTime.getMinutes();
 	function padInt(i) {
 		return `${i}`.padStart(2, '0')
 	}
@@ -1194,23 +1192,23 @@ function updateTitle(time) {
 }
 
 function handleResponse() {
-	if (this.readyState === 4 && this.status === 200) {
-		const responseJSON = JSON.parse(this.responseText);
-		const error = responseJSON.error;
+	if (this.readyState == 4 && this.status == 200) {
+		var responseJSON = JSON.parse(this.responseText);
+		var error = responseJSON.error;
 		if (responseJSON.usersList) {
 			model.usersList = responseJSON.usersList;
 		}
 		if (error) {
 			console.log(error);
 			alert(`Error: ${error}`);
-			if (error === "Wrong password") {
+			if (error == "Wrong password") {
 				clearInterval(repeatSync);
 				login();
 			}
 		} else {
 			// Normal response
 
-			const mapJSON = responseJSON.mapState;
+			var mapJSON = responseJSON.mapState;
 			unitSource.clear();
 			if (responseJSON.statsData) {
 				statsManager = new StatsManager(responseJSON.statsData);
@@ -1219,15 +1217,15 @@ function handleResponse() {
 
 			// Parse units
             model.resetUnitSight();
-			for (let rawUnit of mapJSON.units) {
+			for (var rawUnit of mapJSON.units) {
 				addUnit(rawUnit);
 			}
 
-            airfieldsSource.clear();
+            airfieldsSource.clear()
 
             model.airfields = [];
             // Parse airfields
-            for (let airfield of mapJSON.airfields) {
+            for (var airfield of mapJSON.airfields) {
                 addAirfield(airfield);
             }
             model.removeUnseenUnits();
@@ -1238,14 +1236,14 @@ function handleResponse() {
 				displayNotifications(responseJSON.notifications);
 			}
 
-			if (username !== "admin") {
+			if (username != "admin") {
 				// Handle user specific syncing
 				nextTurnChange = responseJSON.nextTurnChange;
 				isUsersTurn = responseJSON.isCorrectTurn;
 				clearTimeout(turnTimer);
-				if (nextTurnChange !== 0) {
-					const d = new Date();
-					const timeToChange = nextTurnChange - d.getTime();
+				if (nextTurnChange != 0) {
+					var d = new Date();
+					var timeToChange = nextTurnChange-d.getTime();
 
 					turnTimer = setTimeout(turnChange, timeToChange);
 					if (syncNeedsRestarting) {
@@ -1258,7 +1256,7 @@ function handleResponse() {
 				}
 			} else {
 				// Handle admin specific syncing
-				if (gameStarted !== mapJSON.gameStarted) {
+				if (gameStarted != mapJSON.gameStarted) {
 					if (mapJSON.gameStarted) {
 						map.removeControl(deploymentFinishButton);
 					} else {
@@ -1275,17 +1273,17 @@ function handleResponse() {
 syncNeedsRestarting = false;
 
 function sync() {
-	const xmlhttp = new XMLHttpRequest();
+	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = handleResponse;
 	xmlhttp.open("POST", "server.js", true);
 	xmlhttp.setRequestHeader("Content-Type", "application/json");
-	const requestData = {
+	var requestData = {
 		requestType: "sync",
 		changes: [],
 		username: username,
 		password: password
 	};
-	if (username === "admin") {
+	if (username == "admin") {
 		requestData.changes = changes;
 		changes = [];
 	}
@@ -1299,11 +1297,11 @@ function sync() {
 function turnChange() {
 	clearInterval(repeatSync);
 
-	const xmlhttp = new XMLHttpRequest();
+	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = handleResponse;
 	xmlhttp.open("POST", "server.js", true);
 	xmlhttp.setRequestHeader("Content-Type", "application/json");
-	const requestData = {
+	var requestData = {
 		requestType: "turnChange",
 		changes: changes,
 		username: username,
@@ -1316,7 +1314,7 @@ function turnChange() {
 	attacksSource.clear();
 	moveCircleSource.clear();
 	hideDropdown();
-	for (let unit of model.units) {
+	for (var unit of model.units) {
 		unit.moveFeature = null;
 		unit.attackFeature = null;
 	}
@@ -1335,17 +1333,17 @@ function endTurnEarly() {
 }
 
 function start() {
-	document.title = "Altis Map - "+username;
+	document.title = "Altis Map - "+username
 	justStarted = true;
 	sync();
 
-	if (username === "admin") {
+	if (username == "admin") {
 		turnTimeButton = new Button({
 			html: '<i class="material-icons">av_timer</i>',
 			className: "turnTime",
 			title: "Set turn time",
 			handleClick: function() {
-				const time = prompt("New turn time (per user) in seconds: ", "60");
+				var time = prompt("New turn time (per user) in seconds: ", "60");
 				changes.push({type: "setTurnTime", time: parseInt(time)});
 			}
 		});
@@ -1417,7 +1415,7 @@ function login() {
 			start();
 		} else if (e.button === 'cancel') {
 			login();
-
+			return
 		}
 	});
 
