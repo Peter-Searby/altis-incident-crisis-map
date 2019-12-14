@@ -1139,7 +1139,9 @@ function rightClick(e) {
 		var u = selectedUnit;
 		var allowed = false;
 		var isNewMove = selectedUnit.moveFeature == null ||
-			selectedUnit.moveFeature.getGeometry().getLastCoordinate() != loc
+			selectedUnit.moveFeature.getGeometry().getLastCoordinate()[0] != loc[0] ||
+			selectedUnit.moveFeature.getGeometry().getLastCoordinate()[1] != loc[1]
+
 		if (username == "admin") {
 			moveUnit(selectedUnit, loc);
 			hideDropdown();
