@@ -1150,7 +1150,7 @@ function rightClick(e) {
 
 			var validGround = validGroundBetween(selectedUnit.loc, loc);
 
-			if (selectedUnit.user == username && validGround) {
+			if (selectedUnit.user == username && validGround && gameStarted) {
 				allowed = moveCommand(selectedUnit, loc);
 				if (isFirst('move')) {
 					notification.show("You can continue to add moves with a right click. <br/>To remove the last move press Backspace", 5000);
@@ -1164,6 +1164,9 @@ function rightClick(e) {
 			}
 			if (!validGround) {
 				notification.show("This unit cannot move there")
+			}
+			if (!gameStarted) {
+				notification.show("You cannot make moves until the game has begun");
 			}
 		}
 		if (allowed && isNewMove) {
