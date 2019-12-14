@@ -21,21 +21,21 @@ function readData(sM) {
 }
 
 function addUnitType(sM, object) {
-	var type = object["Unit Type"]
-	sM.unitTypes[type] = object
-	delete sM.unitTypes[type]["Unit Type"]
+	var type = object["Unit Type"];
+	sM.unitTypes[type] = object;
+	delete sM.unitTypes[type]["Unit Type"];
 }
 
 function addConflictStat(sM, statType, row) {
 	var mainType = row["Unit Type"];
 	if (!sM.conflictStats[mainType]) {
-		sM.conflictStats[mainType] = new Object();
+		sM.conflictStats[mainType] = {};
 	}
 	stats = sM.conflictStats[mainType];
 	for (var otherType in row) {
 		if (otherType != "Unit Type") {
 			if (!stats[otherType]) {
-				stats[otherType] = new Object();
+				stats[otherType] = {};
 			}
 			stats[otherType][statType] = row[otherType];
 		}
@@ -45,14 +45,14 @@ function addConflictStat(sM, statType, row) {
 
 class StatsManager {
 	constructor(data) {
-		this.unitTypes = new Object();
-		this.conflictStats = new Object();
+		this.unitTypes = {};
+		this.conflictStats = {};
 
 		if (data==undefined) {
 			readData(this);
 	  	} else {
-			this.unitTypes = data.unitTypes
-			this.conflictStats = data.conflictStats
+			this.unitTypes = data.unitTypes;
+			this.conflictStats = data.conflictStats;
 		}
 	}
 
@@ -72,8 +72,13 @@ class StatsManager {
 	}
 
 	getAttackStrength(attackerType, defenderType) {
-		var s = this.conflictStats[attackerType][defenderType];
-		var v;
+		let s;
+		if (this.conflictStats[attackerType] !== undefined) {
+			s = this.conflictStats[attackerType][defenderType];
+		} else {
+			return 0;
+		}
+		let v;
 		if (s == null) {
 			v = 0;
 		} else if (s["attack"] == null) {
@@ -85,7 +90,12 @@ class StatsManager {
 	}
 
 	getDefenceStrength(attackerType, defenderType) {
-		var s = this.conflictStats[attackerType][defenderType];
+		let s;
+		if (this.conflictStats[attackerType] !== undefined) {
+			s = this.conflictStats[attackerType][defenderType];
+		} else {
+			return 0;
+		}
 		var v;
 		if (s == null) {
 			v = 0;
@@ -98,7 +108,12 @@ class StatsManager {
 	}
 
 	getDodgeChance(attackerType, defenderType) {
-		var s = this.conflictStats[defenderType][attackerType];
+		let s;
+		if (this.conflictStats[attackerType] !== undefined) {
+			s = this.conflictStats[attackerType][defenderType];
+		} else {
+			return 0;
+		}
 		var v;
 		if (s == null) {
 			v = 0;

@@ -1,4 +1,4 @@
-Unit Type,Airborne Infantry Battalion,Special Operations Forces Squadron,Marine Infantry Battalion,Infantry Battalion,Motorised Infantry Battalion,Mechanised Infantry Battalion,Surface to Air Missile Battery,Anti-Aircraft Artillery Battery,Tank  Battalion,Attack Helicopter Squadron,Jet Fighter Squadron,Stealth Fighter Squadron,Bomber Flight,Stealth Bomber Flight,Anti-Ship Aircraft Flight,Anti-Submarine Aircraft Flight,Carrier,Cruiser,Destroyer,Frigate,Attack Submarine Nuclear,Attack Submarine Diesel Electric 
+Unit Type,Airborne Infantry Battalion,Special Operations Forces Squadron,Marine Infantry Battalion,Infantry Battalion,Motorised Infantry Battalion,Mechanised Infantry Battalion,Surface to Air Missile Battery,Anti-Aircraft Artillery Battery,Tank Battalion,Attack Helicopter Squadron,Jet Fighter Squadron,Stealth Fighter Squadron,Bomber Flight,Stealth Bomber Flight,Anti-Ship Aircraft Flight,Anti-Submarine Aircraft Flight,Carrier,Cruiser,Destroyer,Frigate,Attack Submarine Nuclear,Attack Submarine Diesel Electric
 Airborne Infantry Battalion,25,20,25,20,18,15,30,20,10,10,0,0,0,0,0,0,0,0,0,0,0,0
 Special Operations Forces Squadron,20,20,20,25,20,16,30,20,8,20,0,0,0,0,0,0,0,0,0,0,0,0
 Marine Infantry Battalion,27,22,25,23,18,15,30,20,11,10,0,0,0,0,0,0,0,0,0,0,0,0
@@ -7,7 +7,7 @@ Motorised Infantry Battalion,20,20,20,22,20,18,30,20,15,15,0,0,0,0,0,0,0,0,0,0,0
 Mechanised Infantry Battalion,22,20,22,25,25,19,30,20,20,15,0,0,0,0,0,0,0,0,0,0,0,0
 Surface to Air Missile Battery,0,0,0,0,0,0,0,0,0,40,40,40,40,30,40,40,0,0,0,0,0,0
 Anti-Aircraft Artillery Battery,15,15,15,20,15,12,0,10,2,30,30,30,30,20,30,30,0,0,0,0,0,0
-Tank  Battalion,23,20,23,25,30,35,30,30,25,10,0,0,0,0,0,0,0,0,0,0,0,0
+Tank Battalion,23,20,23,25,30,35,30,30,25,10,0,0,0,0,0,0,0,0,0,0,0,0
 Attack Helicopter Squadron,20,15,20,22,25,25,20,20,30,20,0,0,0,0,0,0,0,0,0,0,0,0
 Jet Fighter Squadron,0,0,0,0,0,0,0,0,0,40,30,25,30,25,30,30,0,0,0,0,0,0
 Stealth Fighter Squadron,0,0,0,0,0,0,0,0,0,40,30,25,30,25,30,30,0,0,0,0,0,0

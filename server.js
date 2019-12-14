@@ -417,7 +417,7 @@ function handleTurnChange(reqBody, mapJSON) {
 				case "exitAirfield":
 					var unit = getUnitById(getAirfieldById(mapJSON, change.airfieldId).units, change.unitId);
 					exitAirfield(mapJSON, change.airfieldId, change.unitId);
-					addNotification([response.notifications], `A ${unit.type} exitted its airfield.`);
+					addNotification([response.notifications], `A ${unit.type} exited its airfield.`);
 					break;
 				default:
 					console.log(`Unusual change requested: ${change.type}`);
