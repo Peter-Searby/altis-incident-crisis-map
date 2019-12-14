@@ -387,6 +387,7 @@ function handleTurnChange(reqBody, mapJSON) {
 		notifications[reqBody.username] = [];
 		for (var change of changes) {
 			// User changes
+			let unit;
 			switch (change.type) {
 				case "move":
 					attemptMove(mapJSON, change.unitId, change.newLocation);
@@ -411,12 +412,12 @@ function handleTurnChange(reqBody, mapJSON) {
 					}
 					break;
 				case "returnToAirfield":
-					var unit = getUnitById(mapJSON.units, change.unitId);
+					unit = getUnitById(mapJSON.units, change.unitId);
 					returnToAirfield(mapJSON, change.unitId);
 					addNotification([response.notifications], `A ${unit.type} was returned to the nearest airfield.`);
 					break;
 				case "exitAirfield":
-					var unit = getUnitById(getAirfieldById(mapJSON, change.airfieldId).units, change.unitId);
+					unit = getUnitById(getAirfieldById(mapJSON, change.airfieldId).units, change.unitId);
 					exitAirfield(mapJSON, change.airfieldId, change.unitId);
 					addNotification([response.notifications], `A ${unit.type} exited its airfield.`);
 					break;
