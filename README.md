@@ -16,3 +16,5 @@ npm packages:
 
 to run server:
 run `npm start`
+
+clean.sh removes buildup of useless .json and .json.map files in dist/
