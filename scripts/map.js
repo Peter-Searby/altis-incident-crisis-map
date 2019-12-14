@@ -943,6 +943,13 @@ function removeMove(unit) {
 			unit.moveDistance -= distance(coords[coords.length-1], coords[coords.length-2]);
 			geo.setCoordinates(coords.slice(0, coords.length-1))
 		}
+		for (var i = changes.length - 1; i >= 0; i--) {
+			let change = changes[i];
+			if (change.type == "move" && change.unitId == unit.id) {
+				changes.splice(i, 1);
+				return;
+			}
+		}
 	}
 }
 
@@ -1131,11 +1138,13 @@ function rightClick(e) {
 	if (selectedUnit != null) {
 		var u = selectedUnit;
 		var allowed = false;
+		var isNewMove = selectedUnit.moveFeature == null ||
+			selectedUnit.moveFeature.getGeometry().getLastCoordinate() != loc
 		if (username == "admin") {
 			moveUnit(selectedUnit, loc);
 			hideDropdown();
 			allowed = true;
-		} else {
+		} else if (isNewMove) {
 
 			var validGround = validGroundBetween(selectedUnit.loc, loc);
 
@@ -1155,7 +1164,7 @@ function rightClick(e) {
 				notification.show("This unit cannot move there")
 			}
 		}
-		if (allowed) {
+		if (allowed && isNewMove) {
 			changes.push({type: "move", unitId: u.id, newLocation: loc});
 		}
 	} else {
