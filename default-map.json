@@ -42,5 +42,9 @@
 		}
 	],
 	"gameStarted": false,
-	"currentTime": 0
+	"currentTime": 0,
+  	"turnChangeTime": {
+	  "Blufor": 0,
+	  "Opfor": 0
+	}
 }

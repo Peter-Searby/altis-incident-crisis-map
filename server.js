@@ -225,6 +225,7 @@ function handleSync(reqBody, mapJSON) {
 					defaultMap = fs.readFileSync('default-map.json');
 					defaultMapJSON = JSON.parse(defaultMap);
 					mapJSON = defaultMapJSON;
+					updateTurnChangeTimeFromFile(mapJSON.turnChangeTime);
 					gameStarted = mapJSON.gameStarted;
 					init()
 					break;
@@ -238,7 +239,7 @@ function handleSync(reqBody, mapJSON) {
 					console.log(`Unusual change requested: ${change.type}`);
 			}
 		}
-
+		updateTurnChangeTimeInFile(mapJSON.turnChangeTime);
 		var mapRaw = JSON.stringify(mapJSON);
 
 		response.turnTime = settings.turnTime;
@@ -307,6 +308,7 @@ function advanceTurnTimer(mapJSON, offset) {
 		i = (i+1) % usersCount;
 		turnChangeTime[users[i]] = turnChangeTime[previousUser]+parseInt(settings.turnTime);
 	}
+	updateTurnChangeTimeInFile(mapJSON.turnChangeTime);
 }
 
 function checkForMissingUsers(mapJSON) {
@@ -425,7 +427,7 @@ function handleTurnChange(reqBody, mapJSON) {
 					console.log(`Unusual change requested: ${change.type}`);
 			}
 		}
-
+		updateTurnChangeTimeInFile(mapJSON.turnChangeTime);
 		var mapRaw = JSON.stringify(mapJSON);
 		checkForMissingUsers(mapJSON);
 		response.nextTurnChange = turnChangeTime[reqBody.username];
@@ -464,9 +466,28 @@ function changeOccured() {
 function init() {
 	for (user of users) {
 		anyChanges[user] = true;
-		turnChangeTime[user] = 0;
 		firstSync[user] = true;
 		notifications[user] = [];
+	}
+}
+
+function updateTurnChangeTimeInFile(times) {
+	for (user of users) {
+		if (turnChangeTime[user] == 0) {
+			times[user] = 0;
+		} else {
+			times[user] = turnChangeTime[user] - (new Date()).getTime();
+		}
+	}
+}
+
+function updateTurnChangeTimeFromFile(times) {
+	for (user of users) {
+		if (times[user] == 0) {
+			turnChangeTime[user] = 0;
+		} else {
+			turnChangeTime[user] = (new Date()).getTime() + times[user];
+		}
 	}
 }
 
@@ -493,15 +514,15 @@ if (!fs.existsSync("data")) {
 }
 
 if (fs.existsSync("data/map.json")) {
-	gameStarted = JSON.parse(fs.readFileSync('data/map.json')).gameStarted;
+	let mapJSON = JSON.parse(fs.readFileSync('data/map.json'));
+	gameStarted = mapJSON.gameStarted;
+	updateTurnChangeTimeFromFile(mapJSON.turnChangeTime);
 } else {
-	defaultMap = fs.readFileSync('default-map.json');
-	gameStarted = JSON.parse(defaultMap).gameStarted;
-	fs.writeFileSync('data/map.json', defaultMap);
-}
-
-if (gameStarted) {
-	startGame();
+	defaultMapRaw = fs.readFileSync('default-map.json');
+	let defaultMap = JSON.parse(defaultMapRaw)
+	gameStarted = defaultMap.gameStarted;
+	updateTurnChangeTimeFromFile(defaultMap.turnChangeTime);
+	fs.writeFileSync('data/map.json', defaultMapRaw);
 }
 
 app.use(express.static('dist'));
