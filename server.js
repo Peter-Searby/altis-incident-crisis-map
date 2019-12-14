@@ -219,13 +219,14 @@ function handleSync(reqBody, mapJSON) {
 
 					break;
 				case "reset":
-					changeOccured();
 					fs.copyFile('data/map.json', 'data/backup-map.json', (err) => {
 						if (err) throw err;
 					});
 					defaultMap = fs.readFileSync('default-map.json');
 					defaultMapJSON = JSON.parse(defaultMap);
 					mapJSON = defaultMapJSON;
+					gameStarted = mapJSON.gameStarted;
+					init()
 					break;
 				case "returnToAirfield":
 					returnToAirfield(mapJSON, change.unitId);
@@ -453,6 +454,22 @@ function handleTurnChange(reqBody, mapJSON) {
 	return response;
 }
 
+function changeOccured() {
+	for (var key in anyChanges) {
+		anyChanges[key] = true
+	}
+}
+
+function init() {
+	for (user of users) {
+		anyChanges[user] = true;
+		turnChangeTime[user] = 0;
+		firstSync[user] = true;
+		notifications[user] = [];
+	}
+}
+
+
 users = ["Blufor", "Opfor"];
 logins = {	"admin":    "",
 		    [users[0]]: "",
@@ -462,18 +479,8 @@ turnChangeTime = {};
 firstSync = {"admin": true};
 notifications = {"admin": []};
 
-for (user of users) {
-	anyChanges[user] = true;
-	turnChangeTime[user] = 0;
-	firstSync[user] = true;
-	notifications[user] = [];
-}
+init()
 
-function changeOccured() {
-	for (var key in anyChanges) {
-		anyChanges[key] = true
-	}
-}
 
 // File reading
 
