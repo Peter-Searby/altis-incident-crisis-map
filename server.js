@@ -15,7 +15,7 @@ var statsManager = new StatsManager();
 
 
 function userAttemptAdminError(command) {
-	console.log(`User attempted admin command ${command}`);
+	log(`User attempted admin command ${command}`);
 }
 
 function makeError(error) {
@@ -115,7 +115,7 @@ function attemptMove(mapJSON, id, newLocation) {
 			return;
 		}
 	}
-	console.log(`Invalid move made: id ${id} not found`);
+	log(`Invalid move made: id ${id} not found`);
 }
 
 function exitAirfield(mapJSON, airfieldId, unitId) {
@@ -131,7 +131,7 @@ function exitAirfield(mapJSON, airfieldId, unitId) {
 		}
 	}
 	if (unitToDelete == -1) {
-		console.log(`Invalid unit (${unitId}) deletion from airfield ${airfieldId}`);
+		log(`Invalid unit (${unitId}) deletion from airfield ${airfieldId}`);
 	} else {
 		deleteUnit(airfield, unitToDelete.id)
 	}
@@ -174,7 +174,7 @@ function returnToAirfield(mapJSON, unitId) {
 		deleteUnit(mapJSON, unitId);
 		airfield.units.push(unit);
 	} else {
-		console.log(`Failed return to airfield as no airfield was found`);
+		log(`Failed return to airfield as no airfield was found`);
 		changeOccured();
 		deleteUnit(mapJSON, unitId);
 	}
@@ -205,7 +205,7 @@ function handleSync(reqBody, mapJSON) {
 					changeOccured();
 					var unit = getUnitById(mapJSON.units, change.unitId);
 					if (unit == null) {
-						console.log(`Invalid delete made: id ${change.unitId} not found`);
+						log(`Invalid delete made: id ${change.unitId} not found`);
 					} else {
 						deleteUnit(mapJSON, change.unitId);
 					}
@@ -236,7 +236,7 @@ function handleSync(reqBody, mapJSON) {
 					exitAirfield(mapJSON, change.airfieldId, change.unitId);
 					break;
 				default:
-					console.log(`Unusual change requested: ${change.type}`);
+					log(`Unusual change requested: ${change.type}`);
 			}
 		}
 		updateTurnChangeTimeInFile(mapJSON.turnChangeTime);
@@ -261,7 +261,7 @@ function handleSync(reqBody, mapJSON) {
 			response.isCorrectTurn = getNextTurnUser() == reqBody.username;
 		}
 
-		// console.log(`time: ${(new Date()).getTime()}, Blufor: ${turnChangeTime[users[0]]}, Opfor: ${turnChangeTime[users[1]]}`)
+		// log(`time: ${(new Date()).getTime()}, Blufor: ${turnChangeTime[users[0]]}, Opfor: ${turnChangeTime[users[1]]}`)
 
 		fs.writeFileSync('data/map.json', mapRaw);
 	} else {
@@ -424,7 +424,7 @@ function handleTurnChange(reqBody, mapJSON) {
 					addNotification([response.notifications], `A ${unit.type} exited its airfield.`);
 					break;
 				default:
-					console.log(`Unusual change requested: ${change.type}`);
+					log(`Unusual change requested: ${change.type}`);
 			}
 		}
 		updateTurnChangeTimeInFile(mapJSON.turnChangeTime);
@@ -439,11 +439,11 @@ function handleTurnChange(reqBody, mapJSON) {
 		} else {
 			response.mapState = restrictMapView(mapJSON, reqBody.username);
 		}
-		// console.log(`time: ${(new Date()).getTime()}, test1: ${turnChangeTime.test1}, test2: ${turnChangeTime.test2}`);
+		// log(`time: ${(new Date()).getTime()}, test1: ${turnChangeTime.test1}, test2: ${turnChangeTime.test2}`);
 
 		fs.writeFileSync('data/map.json', mapRaw);
 	} else {
-		console.log(`Out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser} at time ${(new Date()).getTime()}`);
+		log(`Out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser} at time ${(new Date()).getTime()}`);
 		// response = makeError(`out of turn - turn change. user: ${reqBody.username}. next user: ${nextUser}`)
 		response.mapState = restrictMapView(mapJSON);
 		response.nextTurnChange = turnChangeTime[reqBody.username];
@@ -488,6 +488,17 @@ function updateTurnChangeTimeFromFile(times) {
 		} else {
 			turnChangeTime[user] = (new Date()).getTime() + times[user];
 		}
+	}
+}
+
+function log(message) {
+	t = new Date();
+	message = `[${t.toLocaleString()}] ${message}`;
+	console.log(message);
+	if (!fs.existsSync("data/server.log")) {
+		fs.writeFileSync('data/server.log', message);
+	} else {
+		fs.appendFileSync('data/server.log', "\n"+message);
 	}
 }
 
@@ -541,11 +552,11 @@ app.post('/server.js', function (req, res, next) {
 		} else if (req.body.requestType == "turnChange") {
 			response = handleTurnChange(req.body, mapJSON);
 		} else {
-			console.log(`Invalid request made: ${req.body.requestType}`);
+			log(`Invalid request made: ${req.body.requestType}`);
 			response = makeError("Invalid request made");
 		}
 	} else  {
-		console.log(`Incorrect password for user, ${username}, entered`);
+		log(`Incorrect password for user, ${username}, entered`);
 		response = makeError("Wrong password");
 	}
 	res.send(JSON.stringify(response));
