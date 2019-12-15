@@ -506,7 +506,6 @@ function log(message) {
 users = ["Blufor", "Opfor"];
 // Luckily this doesn't need to be secure as it will be on a private network and its just a game
 logins = JSON.parse(fs.readFileSync("/var/thereIsProbablyAMoreSecureWayOfDoingThis.json"));
-console.log(logins)
 anyChanges = {"admin": true};
 turnChangeTime = {};
 firstSync = {"admin": true};
