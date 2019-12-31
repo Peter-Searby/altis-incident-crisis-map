@@ -7,7 +7,7 @@ function roundLocationBy(loc, amount) {
 
 
 class Unit {
-	constructor(loc, id, type, user, deployTime, fuelLeft, hp, properties) {
+	constructor(loc, id, type, user, deployTime, fuelLeft, hp, units, properties) {
 		this.loc = loc;
 		this.type = type;
 		this.user = user;
@@ -21,6 +21,7 @@ class Unit {
 		this.hp = hp;
         this.feature = null;
         this.fuelLeft = fuelLeft;
+        this.units = units;
 	}
 
     setFeature(feature) {
@@ -82,7 +83,13 @@ class Model {
             unit.fuelLeft = rawUnit.fuelLeft;
     		unit.hp = rawUnit.hp;
     	} else {
-    		unit = new Unit(loc, id, rawUnit.type, rawUnit.user, rawUnit.deployTime, rawUnit.fuelLeft, rawUnit.hp, properties);
+    		let childUnits;
+    		if (rawUnit.hasOwnProperty("units")) {
+    			childUnits = rawUnit.units;
+			} else {
+    			childUnits = []
+			}
+    		unit = new Unit(loc, id, rawUnit.type, rawUnit.user, rawUnit.deployTime, rawUnit.fuelLeft, rawUnit.hp, childUnits, properties);
     		this.units.push(unit);
     	}
 

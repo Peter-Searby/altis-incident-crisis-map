@@ -552,6 +552,24 @@ function isReturningToAirfield(unitId) {
     return false;
 }
 
+function isLeavingContainer(unitId) {
+	for (var change of changes) {
+		if (change.type == "exitContainer" && change.unitId == unitId) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function isEnteringContainer(unitId) {
+	for (var change of changes) {
+		if (change.type == "enterContainer" && change.unitId == unitId) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // Unit dropdown
 function displayDropdown(units, airfields, pixel) {
     var positionStyle = '';
@@ -579,6 +597,7 @@ function displayDropdown(units, airfields, pixel) {
 		// Unit details
 
 		var unit = units[0];
+		var leaving;
 
 		if (selectedUnit != unit) {
 			displayMoveCircle(unit);
@@ -646,6 +665,30 @@ function displayDropdown(units, airfields, pixel) {
     				</tr>
     			`;
     		}
+
+    		// Transport Unit contents
+			if (unit.properties["Capacity"] > 0) {
+				if (unit.units.length == 0) {
+					dropdownTable.innerHTML += "Contains no units"
+				} else {
+					dropdownTable.innerHTML += "<b>Contents:</b>\n"
+					for (var childUnit of unit.units) {
+						if (isLeavingContainer(unit.id)) {
+							leaving = `<td style="font-style: italic">(leaving)</td>`
+						} else {
+							leaving = "";
+						}
+						dropdownTable.innerHTML += `
+							<tr id=${childUnit.id} class="transportContents">
+								<td>${childUnit.type}</td>
+								<td style="font-style: italic">${childUnit.user}</td>
+								${leaving}
+							</tr>
+							`;
+					}
+				}
+			}
+
 
     		if (unit.loc == null) {
     			// Stored aircraft specifc elements
@@ -725,22 +768,24 @@ function displayDropdown(units, airfields, pixel) {
 		`;
         if (airfields[0].units.length == 0) {
             dropdownTable.innerHTML += '<td style="font-style: italic">empty</td>'
+        } else {
+        	// List of units
+			for (var unit of airfields[0].units) {
+				var leaving;
+				if (isLeavingAirfield(unit.id)) {
+					leaving = `<td style="font-style: italic">(leaving)</td>`
+				} else {
+					leaving = "";
+				}
+				dropdownTable.innerHTML += `
+				<tr id=${unit.id} class="airfieldStorage">
+					<td>${unit.type}</td>
+					<td style="font-style: italic">${unit.user}</td>
+					${leaving}
+				</tr>
+				`;
+			}
         }
-		for (var unit of airfields[0].units) {
-            var leaving;
-            if (isLeavingAirfield(unit.id)) {
-                leaving = `<td style="font-style: italic">(leaving)</td>`
-            } else {
-                leaving = "";
-            }
-			dropdownTable.innerHTML += `
-			<tr id=${unit.id} class="airfieldStorage">
-				<td>${unit.type}</td>
-				<td style="font-style: italic">${unit.user}</td>
-                ${leaving}
-			</tr>
-			`;
-		}
     } else {
 		// Entity Group
 
