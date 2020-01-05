@@ -504,8 +504,20 @@ function log(message) {
 
 
 users = ["Blufor", "Opfor"];
+const passwordsLocation = "/var/thereIsProbablyAMoreSecureWayOfDoingThis.json"
+if (!fs.existsSync(passwordsLocation)) {
+	throw `Missing passwords file.
+	Create the file at /var/thereIsProbablyAMoreSecureWayOfDoingThis.json with the following format:
+	{
+		"admin": "ADMIN_PASSWORD",
+		"Blufor": "BLUFOR_PASSWORD",
+		"Opfor": "OPFOR_PASSWORD"
+	}`;
+
+}
 // Luckily this doesn't need to be secure as it will be on a private network and its just a game
-logins = JSON.parse(fs.readFileSync("/var/thereIsProbablyAMoreSecureWayOfDoingThis.json"));
+logins = JSON.parse(fs.readFileSync(passwordsLocation));
+
 anyChanges = {"admin": true};
 turnChangeTime = {};
 firstSync = {"admin": true};
