@@ -513,7 +513,6 @@ if (!fs.existsSync(passwordsLocation)) {
 		"Blufor": "BLUFOR_PASSWORD",
 		"Opfor": "OPFOR_PASSWORD"
 	}`;
-
 }
 // Luckily this doesn't need to be secure as it will be on a private network and its just a game
 logins = JSON.parse(fs.readFileSync(passwordsLocation));

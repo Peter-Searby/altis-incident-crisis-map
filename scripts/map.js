@@ -770,7 +770,7 @@ function displayDropdown(units, airfields, pixel) {
             dropdownTable.innerHTML += '<td style="font-style: italic">empty</td>'
         } else {
         	// List of units
-			for (var unit of airfields[0].units) {
+			for (unit of airfields[0].units) {
 				var leaving;
 				if (isLeavingAirfield(unit.id)) {
 					leaving = `<td style="font-style: italic">(leaving)</td>`
@@ -801,7 +801,7 @@ function displayDropdown(units, airfields, pixel) {
     			<th>Units</th>
     		</tr>
     		`;
-    		for (var unit of units) {
+    		for (unit of units) {
     			dropdownTable.innerHTML += `
     			<tr id=${unit.id} class="unitGroup">
     				<td>${unit.type}</td>
