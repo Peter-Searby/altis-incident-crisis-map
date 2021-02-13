@@ -1,5 +1,8 @@
 # altis-incident-crisis-map
 
+Unfinished as the Model UN committee this was being made for was cancelled.
+
+
 Required packages:
 - npm
 
